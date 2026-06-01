@@ -21,12 +21,12 @@ export const create = async (req: Request, res: Response, next: NextFunction) =>
       data: { status },
     });
 
-    // ── Gửi push notification cho owner của cây ảo ──────────────────────────
+    // ── Gửi push notification và tạo Notification in-app cho owner ───────────
     // Không await để không block response
     prisma.virtualPlant.findFirst({
       where: { realPlantId },
       include: {
-        user: { select: { expoPushToken: true, fullName: true } },
+        user: { select: { id: true, expoPushToken: true, fullName: true } },
         realPlant: {
           select: {
             code: true,
@@ -34,19 +34,45 @@ export const create = async (req: Request, res: Response, next: NextFunction) =>
           },
         },
       },
-    }).then((vPlant) => {
-      const token = vPlant?.user?.expoPushToken;
-      if (!token) return;
-      const farmer = req.user as any;
-      notifyPlantUpdate({
-        expoPushToken: token,
-        plantCode: vPlant!.realPlant!.code,
-        flowerName: vPlant!.realPlant!.flowerType?.name ?? 'Cây của bạn',
-        status,
-        note,
-        farmerName: farmer?.fullName,
-      }).catch((err) => console.error('[Push] notifyPlantUpdate error:', err));
-    }).catch(() => {});
+    }).then(async (vPlant) => {
+      if (!vPlant?.user?.id) return;
+      
+      const statusLabel: Record<string, string> = {
+        SEED: 'Hạt giống', SPROUT: 'Nảy mầm 🌱', GROWING: 'Đang lớn 🌿',
+        BUDDING: 'Ra nụ 🌼', BLOOMING: 'Nở hoa 🌸', RESTING: 'Nghỉ ngơi 😴',
+        NEEDS_CARE: 'Cần chăm sóc ⚠️', COMPLETED: 'Hoàn thành ✅',
+      };
+      
+      const flowerName = vPlant.realPlant?.flowerType?.name ?? 'Cây của bạn';
+      const title = `🌸 ${flowerName} của bạn có cập nhật mới!`;
+      const body = note
+        ? `Trạng thái: ${statusLabel[status] ?? status} — "${note}"`
+        : `Trạng thái mới: ${statusLabel[status] ?? status}`;
+        
+      // 1. Lưu vào Database để hiển thị ở cái Chuông (Notification Center)
+      await prisma.notification.create({
+        data: {
+          userId: vPlant.user.id,
+          title,
+          body,
+          type: 'plant_update',
+        }
+      });
+
+      // 2. Bắn Push Notification xuống máy điện thoại
+      const token = vPlant.user.expoPushToken;
+      if (token) {
+        const farmer = req.user as any;
+        notifyPlantUpdate({
+          expoPushToken: token,
+          plantCode: vPlant.realPlant!.code,
+          flowerName,
+          status,
+          note,
+          farmerName: farmer?.fullName,
+        }).catch((err) => console.error('[Push] notifyPlantUpdate error:', err));
+      }
+    }).catch((err) => console.error('[Notify] Error saving notification:', err));
 
     return res.status(201).json({ message: "Plant update created", data: update });
   } catch (err) { next(err); }

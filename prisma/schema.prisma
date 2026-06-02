@@ -105,6 +105,7 @@ enum CommunityPostStatus {
   VISIBLE
   HIDDEN
   REPORTED
+  REJECTED
 }
 
 enum CommunityReactionType {
@@ -142,6 +143,7 @@ model User {
   careTaskLogs     CareTaskLog[]
   communityPosts   CommunityPost[]
   communityReactions CommunityReaction[]
+  communityReports CommunityReport[]   @relation("UserReports")
   refreshTokens    RefreshToken[]
   devices          UserDevice[]
   notifications    Notification[]
@@ -403,6 +405,7 @@ model CommunityPost {
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
   reactions CommunityReaction[]
+  reports   CommunityReport[]
 
   @@index([createdAt])
   @@index([status])
@@ -426,6 +429,25 @@ model CommunityReaction {
   @@index([postId])
   @@index([userId])
   @@map("CommunityReaction")
+}
+
+model CommunityReport {
+  id         String @id @default(uuid()) @db.Uuid
+
+  postId     String @db.Uuid
+  post       CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  reporterId String @db.Uuid
+  reporter   User   @relation("UserReports", fields: [reporterId], references: [id], onDelete: Cascade)
+
+  reason    String  @db.VarChar(255)
+  note      String? @db.Text
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([postId])
+  @@index([reporterId])
+  @@map("CommunityReport")
 }
 
 // ========================

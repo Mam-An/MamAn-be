@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import prisma from "../../utils/prisma.js";
+import { deleteCloudinaryImage } from "../../middlewares/upload.middleware.js";
 
 // ── Seeded PRNG (mulberry32) — deterministic random từ seed số nguyên ─────────
 function seededRandom(seed: number) {
@@ -15,6 +16,12 @@ function seededRandom(seed: number) {
 function todaySeed(): number {
   const d = new Date();
   return parseInt(`${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`);
+}
+
+// ── Lấy public_id từ file Cloudinary ────────────────────────────────────────
+function getPublicId(file: any): string | undefined {
+  // multer-storage-cloudinary lưu public_id trong file.filename hoặc file.public_id
+  return file?.filename ?? file?.public_id ?? undefined;
 }
 
 // GET /api/care-tasks — trả 10 task/ngày, đảm bảo đủ 6 loại tài nguyên
@@ -73,13 +80,12 @@ export const getAll = async (req: Request, res: Response, next: NextFunction) =>
 // POST /api/care-tasks  [ADMIN] — multipart/form-data, ảnh image là tùy chọn
 export const create = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const file = req.file as any; // Dùng any để tránh lỗi namespace Express.Multer
+    const file = req.file as any;
 
-    // multipart gửi tất cả field dưới dạng string — cần parse
     const {
       title, description, type, isDefault,
       rewardResource, rewardAmount, growthReward,
-      verifyType, durationSeconds,
+      verifyType, durationSeconds, isShareable,
     } = req.body;
 
     if (!title || !type) {
@@ -92,6 +98,7 @@ export const create = async (req: Request, res: Response, next: NextFunction) =>
         description: description ?? undefined,
         type: type as any,
         isDefault: isDefault !== undefined ? (isDefault === "true" || isDefault === true) : true,
+        isShareable: isShareable !== undefined ? (isShareable === "true" || isShareable === true) : false,
         rewardResource: (rewardResource ?? "WATER") as any,
         rewardAmount: rewardAmount ? parseInt(String(rewardAmount)) : 10,
         growthReward: growthReward ? parseInt(String(growthReward)) : 5,
@@ -104,7 +111,7 @@ export const create = async (req: Request, res: Response, next: NextFunction) =>
   } catch (err) { next(err); }
 };
 
-// PATCH /api/care-tasks/:id  [ADMIN] — cập nhật thông tin task (không gồm ảnh)
+// PATCH /api/care-tasks/:id  [ADMIN]
 export const updateTask = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
@@ -116,22 +123,18 @@ export const updateTask = async (req: Request, res: Response, next: NextFunction
   } catch (err) { next(err); }
 };
 
-// POST /api/care-tasks/:id/character-image  [ADMIN] — upload hoạt ảnh nhân vật
+// POST /api/care-tasks/:id/character-image  [ADMIN]
 export const uploadCharacterImage = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-
-    // multer-storage-cloudinary tự upload, req.file.path = URL Cloudinary
     const file = req.file as any;
     if (!file) {
       return res.status(400).json({ message: "No file uploaded" });
     }
-
     const task = await prisma.careTask.update({
       where: { id: id as string },
       data: { characterImageUrl: file.path },
     });
-
     return res.status(200).json({
       message: "Character image uploaded successfully",
       data: { id: task.id, characterImageUrl: task.characterImageUrl },
@@ -139,7 +142,7 @@ export const uploadCharacterImage = async (req: Request, res: Response, next: Ne
   } catch (err) { next(err); }
 };
 
-// DELETE /api/care-tasks/:id/character-image  [ADMIN] — xóa ảnh nhân vật
+// DELETE /api/care-tasks/:id/character-image  [ADMIN]
 export const deleteCharacterImage = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
@@ -147,34 +150,88 @@ export const deleteCharacterImage = async (req: Request, res: Response, next: Ne
       where: { id: id as string },
       data: { characterImageUrl: null },
     });
-    return res.status(200).json({
-      message: "Character image removed",
-      data: { id: task.id },
-    });
+    return res.status(200).json({ message: "Character image removed", data: { id: task.id } });
   } catch (err) { next(err); }
 };
 
-// POST /api/care-task-logs  — user hoàn thành 1 task hôm nay
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /api/care-task-logs — user hoàn thành task (có thể kèm ảnh)
+// Content-Type: multipart/form-data
+// ─────────────────────────────────────────────────────────────────────────────
 export const completeTask = async (req: Request, res: Response, next: NextFunction) => {
+  const file = req.file as any;
+  let uploadedPublicId: string | undefined;
+
   try {
     const userId = req.user!.id;
-    const { careTaskId, virtualPlantId } = req.body;
+    const {
+      careTaskId,
+      virtualPlantId,
+      note,
+      shareToCommunity: shareRaw,
+      visibility: visibilityRaw,
+    } = req.body;
 
+    const shareToCommunity = shareRaw === true || shareRaw === "true";
+    const visibility = visibilityRaw === "PUBLIC" ? "PUBLIC" : "ANONYMOUS";
+
+    // ── 1. Tìm task ──────────────────────────────────────────────────────────
+    const careTask = await prisma.careTask.findUnique({ where: { id: careTaskId } });
+    if (!careTask || !careTask.isActive) {
+      // Nếu ảnh đã upload lên Cloudinary nhưng task không tồn tại, xóa ảnh
+      if (file) uploadedPublicId = getPublicId(file);
+      if (uploadedPublicId) await deleteCloudinaryImage(uploadedPublicId);
+      return res.status(404).json({ message: "Không tìm thấy nhiệm vụ hoặc nhiệm vụ đã bị vô hiệu hóa." });
+    }
+
+    // ── 2. Kiểm tra verifyType ───────────────────────────────────────────────
+    if (careTask.verifyType === "PHOTO_REQUIRED" && !file) {
+      return res.status(400).json({ message: "Task này cần ảnh để hoàn thành." });
+    }
+
+    // ── 3. Kiểm tra đã hoàn thành hôm nay chưa ──────────────────────────────
     const taskDate = new Date();
     taskDate.setHours(0, 0, 0, 0);
 
-    // Lấy thông tin phần thưởng thực của task
-    const careTask = await prisma.careTask.findUnique({ where: { id: careTaskId } });
-    if (!careTask) return res.status(404).json({ message: "CareTask not found" });
+    const existing = await prisma.careTaskLog.findUnique({
+      where: { userId_careTaskId_taskDate: { userId, careTaskId, taskDate } },
+    });
+    if (existing) {
+      if (file) {
+        uploadedPublicId = getPublicId(file);
+        if (uploadedPublicId) await deleteCloudinaryImage(uploadedPublicId);
+      }
+      return res.status(409).json({ message: "Bạn đã hoàn thành nhiệm vụ này hôm nay rồi." });
+    }
 
+    // ── 4. Lấy photo info nếu có ảnh ────────────────────────────────────────
+    let photoUrl: string | undefined;
+    let cloudinaryPublicId: string | undefined;
+    if (file) {
+      photoUrl = file.path;            // secure_url từ Cloudinary
+      cloudinaryPublicId = getPublicId(file);
+      uploadedPublicId = cloudinaryPublicId;
+    }
+
+    // ── 5. Tạo CareTaskLog ───────────────────────────────────────────────────
     const log = await prisma.careTaskLog.create({
-      data: { userId, careTaskId, virtualPlantId, taskDate, completedAt: new Date() },
+      data: {
+        userId,
+        careTaskId,
+        virtualPlantId: virtualPlantId ?? undefined,
+        taskDate,
+        completedAt: new Date(),
+        note: note ?? undefined,
+        photoUrl,
+        cloudinaryPublicId,
+        sharedToCommunity: false, // Cập nhật sau nếu share thành công
+      },
       include: { careTask: true },
     });
 
-    // Cập nhật tài nguyên cây ảo — increment đúng field theo rewardResource
+    // ── 6. Cộng tài nguyên + growthPoint cho cây ảo ──────────────────────────
+    let updatedPlant = null;
     if (virtualPlantId) {
-      // Map ResourceType → tên field trong DB
       const resourceField: Record<string, object> = {
         WATER:      { waterAmount:      { increment: careTask.rewardAmount } },
         SUNLIGHT:   { sunlightAmount:   { increment: careTask.rewardAmount } },
@@ -186,40 +243,108 @@ export const completeTask = async (req: Request, res: Response, next: NextFuncti
 
       const resourceUpdate = resourceField[careTask.rewardResource] ?? {};
 
-      // Streak: kiểm tra xem hôm qua user có chăm sóc không
+      // Streak: kiểm tra hôm qua
       const yesterday = new Date(taskDate);
       yesterday.setDate(yesterday.getDate() - 1);
       const yesterdayLog = await prisma.careTaskLog.findFirst({
         where: { userId, taskDate: yesterday, virtualPlantId },
       });
 
-      await prisma.virtualPlant.update({
+      updatedPlant = await prisma.virtualPlant.update({
         where: { id: virtualPlantId },
         data: {
           ...resourceUpdate,
-          growthPoint: { increment: careTask.growthReward }, // giữ cho thành tích
+          growthPoint: { increment: careTask.growthReward },
           lastCaredAt: new Date(),
           streakCount: yesterdayLog ? { increment: 1 } : 1,
         },
       });
     }
 
-    return res.status(201).json({ message: "Task completed", data: log });
-  } catch (err) { next(err); }
+    // ── 7. Tạo CommunityPost nếu user muốn chia sẻ ───────────────────────────
+    let communityPost = null;
+    if (shareToCommunity) {
+      if (!careTask.isShareable) {
+        // Task không cho phép chia sẻ — bỏ qua, không báo lỗi
+        console.log(`[Community] Task ${careTask.id} is not shareable, skipping community post.`);
+      } else {
+        communityPost = await prisma.communityPost.create({
+          data: {
+            userId,
+            taskLogId: log.id,
+            content:  note ?? null,
+            imageUrl: photoUrl ?? null,
+            visibility: visibility as any,
+          },
+        });
+
+        // Cập nhật flag sharedToCommunity trong log
+        await prisma.careTaskLog.update({
+          where: { id: log.id },
+          data:  { sharedToCommunity: true },
+        });
+      }
+    }
+
+    return res.status(201).json({
+      message: "Task completed successfully",
+      metadata: {
+        taskLog: { ...log, sharedToCommunity: !!communityPost },
+        updatedPlant,
+        communityPost,
+      },
+    });
+  } catch (err: any) {
+    // Nếu DB lỗi nhưng ảnh đã upload → dọn rác Cloudinary
+    if (uploadedPublicId) {
+      await deleteCloudinaryImage(uploadedPublicId);
+    }
+    next(err);
+  }
 };
 
-// GET /api/care-task-logs/my  — lịch sử task hôm nay của user
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /api/care-task-logs/my — lịch sử task của user (có phân trang + lọc ngày)
+// ─────────────────────────────────────────────────────────────────────────────
 export const getMyLogs = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.id;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const { page = "1", limit = "20", fromDate, toDate } = req.query as Record<string, string>;
 
-    const logs = await prisma.careTaskLog.findMany({
-      where: { userId, taskDate: today },
-      include: { careTask: true, virtualPlant: { select: { id: true, nickname: true } } },
-      orderBy: { completedAt: "desc" },
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const take = Math.min(parseInt(limit), 100);
+
+    const where: any = { userId };
+
+    // Nếu không truyền fromDate/toDate thì mặc định lấy task hôm nay
+    if (fromDate || toDate) {
+      where.completedAt = {
+        ...(fromDate ? { gte: new Date(fromDate) } : {}),
+        ...(toDate   ? { lte: new Date(toDate)   } : {}),
+      };
+    } else {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      where.taskDate = today;
+    }
+
+    const [logs, total] = await Promise.all([
+      prisma.careTaskLog.findMany({
+        where,
+        include: {
+          careTask:     true,
+          virtualPlant: { select: { id: true, nickname: true } },
+        },
+        orderBy: { completedAt: "desc" },
+        skip,
+        take,
+      }),
+      prisma.careTaskLog.count({ where }),
+    ]);
+
+    return res.status(200).json({
+      data: logs,
+      pagination: { page: parseInt(page), limit: take, total },
     });
-    return res.status(200).json({ data: logs });
   } catch (err) { next(err); }
 };

@@ -79,20 +79,40 @@ enum CareTaskType {
 }
 
 /// Loại xác nhận hoàn thành nhiệm vụ
-enum VerifyType {
-  SELF_CONFIRM   // Tự xác nhận
-  TIMER          // Đếm ngược
-  OPTIONAL_PHOTO // Ảnh tuỳ chọn
+enum TaskVerifyType {
+  SELF_CONFIRM    // Tự xác nhận
+  TIMER           // Đếm ngược
+  PHOTO_REQUIRED  // Bắt buộc ảnh
+  PHOTO_OPTIONAL  // Ảnh tuỳ chọn
 }
 
 /// Tài nguyên thưởng cho cây ảo
-enum ResourceType {
+enum PlantResourceType {
   WATER
   SUNLIGHT
   FERTILIZER
   AIR
   LOVE
   DEW
+}
+
+enum CommunityPostVisibility {
+  PUBLIC
+  ANONYMOUS
+}
+
+enum CommunityPostStatus {
+  VISIBLE
+  HIDDEN
+  REPORTED
+}
+
+enum CommunityReactionType {
+  LOVE
+  LIGHT
+  SPROUT
+  HUG
+  THANKS
 }
 
 // ========================
@@ -117,12 +137,14 @@ model User {
   plantUpdates PlantUpdate[] @relation("FarmerPlantUpdates")
 
   // USER: trồng cây ảo, ghi nhật ký, làm task
-  virtualPlants VirtualPlant[]
-  moodJournals  MoodJournal[]
-  careTaskLogs  CareTaskLog[]
-  refreshTokens RefreshToken[]
-  devices       UserDevice[]
-  notifications Notification[]
+  virtualPlants    VirtualPlant[]
+  moodJournals     MoodJournal[]
+  careTaskLogs     CareTaskLog[]
+  communityPosts   CommunityPost[]
+  communityReactions CommunityReaction[]
+  refreshTokens    RefreshToken[]
+  devices          UserDevice[]
+  notifications    Notification[]
 
   @@map("User")
 }
@@ -304,13 +326,14 @@ model CareTask {
   type        CareTaskType
   isDefault   Boolean      @default(true)
   isActive    Boolean      @default(true)
+  isShareable Boolean      @default(false) // Cho phép chia sẻ lên cộng đồng
 
   // Mobile gameplay fields
-  rewardResource  ResourceType @default(WATER)  // Loại tài nguyên thưởng
-  rewardAmount    Int          @default(10)      // Số lượng tài nguyên thưởng
-  growthReward    Int          @default(5)       // Điểm phát triển thưởng
-  verifyType      VerifyType   @default(SELF_CONFIRM) // Cách xác nhận
-  durationSeconds Int?                           // Thời gian đếm ngược (TIMER)
+  rewardResource  PlantResourceType @default(WATER)       // Loại tài nguyên thưởng
+  rewardAmount    Int               @default(10)          // Số lượng tài nguyên thưởng
+  growthReward    Int               @default(5)           // Điểm phát triển thưởng
+  verifyType      TaskVerifyType    @default(SELF_CONFIRM) // Cách xác nhận
+  durationSeconds Int?                                    // Thời gian đếm ngược (TIMER)
 
   // Hoạt ảnh nhân vật riêng cho từng task (upload lên Cloudinary)
   characterImageUrl String? @db.VarChar(500)
@@ -341,12 +364,68 @@ model CareTaskLog {
   taskDate    DateTime @db.Date
   completedAt DateTime @default(now()) @db.Timestamptz(3)
 
+  note               String?  @db.Text   // Ghi chú của user khi hoàn thành
+  photoUrl           String?  @db.VarChar(500) // Ảnh chụp hoàn thành task
+  cloudinaryPublicId String?  @db.VarChar(255) // Dùng để xóa ảnh khỏi Cloudinary nếu cần
+  sharedToCommunity  Boolean  @default(false)  // Đã chia sẻ lên cộng đồng
+
+  communityPost CommunityPost? // 1 log có thể tạo 1 bài cộng đồng
+
   // Mỗi user chỉ được hoàn thành 1 task 1 lần mỗi ngày
   @@unique([userId, careTaskId, taskDate])
-  @@index([userId])
+  @@index([userId, completedAt])
   @@index([virtualPlantId])
   @@index([careTaskId])
   @@map("CareTaskLog")
+}
+
+// ========================
+// NHÓM CỘNG ĐỒNG
+// ========================
+
+model CommunityPost {
+  id        String @id @default(uuid()) @db.Uuid
+
+  userId    String @db.Uuid
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  taskLogId String?      @unique @db.Uuid
+  taskLog   CareTaskLog? @relation(fields: [taskLogId], references: [id], onDelete: SetNull)
+
+  content  String? @db.Text
+  imageUrl String? @db.VarChar(500)
+
+  visibility  CommunityPostVisibility @default(ANONYMOUS)
+  status      CommunityPostStatus     @default(VISIBLE)
+  reportCount Int                     @default(0)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  reactions CommunityReaction[]
+
+  @@index([createdAt])
+  @@index([status])
+  @@index([userId])
+  @@map("CommunityPost")
+}
+
+model CommunityReaction {
+  id        String @id @default(uuid()) @db.Uuid
+
+  postId String @db.Uuid
+  post   CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  userId String @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type      CommunityReactionType
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@unique([postId, userId, type])
+  @@index([postId])
+  @@index([userId])
+  @@map("CommunityReaction")
 }
 
 // ========================

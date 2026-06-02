@@ -88,15 +88,15 @@ export const create = async (req: Request, res: Response, next: NextFunction) =>
       verifyType, durationSeconds, isShareable,
     } = req.body;
 
-    if (!title || !type) {
-      return res.status(400).json({ message: "title and type are required" });
+    if (!title) {
+      return res.status(400).json({ message: "title is required" });
     }
 
     const task = await prisma.careTask.create({
       data: {
         title,
         description: description ?? undefined,
-        type: type as any,
+        type: (type ?? "WATER_PLANT") as any,
         isDefault: isDefault !== undefined ? (isDefault === "true" || isDefault === true) : true,
         isShareable: isShareable !== undefined ? (isShareable === "true" || isShareable === true) : false,
         rewardResource: (rewardResource ?? "WATER") as any,

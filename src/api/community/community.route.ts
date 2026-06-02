@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { authenticate, authorize } from "../../middlewares/auth.middleware.js";
-import { getPosts, toggleReaction, reportPost, hidePost } from "./community.controller.js";
+import { getPosts, toggleReaction, reportPost, hidePost, getAllAdmin, deletePost } from "./community.controller.js";
 
 const router = Router();
 
@@ -32,9 +32,21 @@ router.post("/posts/:id/reactions", authenticate, toggleReaction);
 router.post("/posts/:id/report", authenticate, reportPost);
 
 /**
- * PATCH /api/admin/community/posts/:id/hide  [ADMIN]
+ * PATCH /api/community/posts/:id/hide  [ADMIN]
  * Ẩn bài viết vi phạm.
  */
 router.patch("/posts/:id/hide", authenticate, authorize("ADMIN"), hidePost);
+
+/**
+ * GET /api/community/admin/posts  [ADMIN]
+ * Lấy tất cả bài viết (quản lý cộng đồng)
+ */
+router.get("/admin/posts", authenticate, authorize("ADMIN"), getAllAdmin);
+
+/**
+ * DELETE /api/community/posts/:id  [ADMIN]
+ * Xóa bài viết
+ */
+router.delete("/posts/:id", authenticate, authorize("ADMIN"), deletePost);
 
 export default router;

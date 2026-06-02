@@ -113,3 +113,11 @@ export const getAll = async (req: Request, res: Response, next: NextFunction) =>
     return res.status(200).json({ data: updates });
   } catch (err) { next(err); }
 };
+
+// DELETE /api/plant-updates/:id  [ADMIN]
+export const deleteUpdate = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await prisma.plantUpdate.delete({ where: { id: req.params.id as string } });
+    return res.status(200).json({ message: "Plant update deleted" });
+  } catch (err) { next(err); }
+};

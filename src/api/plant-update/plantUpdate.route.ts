@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { authenticate, authorize } from "../../middlewares/auth.middleware.js";
 import { validateBody } from "../../middlewares/validate.middleware.js";
-import { create, getByRealPlant, getAll } from "./plantUpdate.controller.js";
+import { create, getByRealPlant, getAll, deleteUpdate } from "./plantUpdate.controller.js";
 import { createPlantUpdateSchema } from "./plantUpdate.schema.js";
 
 const router = Router();
@@ -83,5 +83,25 @@ router.post("/", authenticate, authorize("FARMER"), validateBody(createPlantUpda
  *         description: List of updates
  */
 router.get("/:realPlantId", authenticate, getByRealPlant);
+
+/**
+ * @swagger
+ * /plant-updates/{id}:
+ *   delete:
+ *     summary: Delete a plant update (ADMIN)
+ *     tags: [PlantUpdate]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Deleted
+ */
+router.delete("/:id", authenticate, authorize("ADMIN"), deleteUpdate);
 
 export default router;

@@ -140,7 +140,7 @@ export const reportPost = async (req: Request, res: Response, next: NextFunction
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PATCH /api/admin/community/posts/:id/hide — Admin ẩn bài
+// PATCH /api/community/posts/:id/hide — Admin ẩn bài
 // ─────────────────────────────────────────────────────────────────────────────
 export const hidePost = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -154,3 +154,76 @@ export const hidePost = async (req: Request, res: Response, next: NextFunction) 
     return res.status(200).json({ message: "Bài viết đã được ẩn.", data: { id: post.id, status: post.status } });
   } catch (err) { next(err); }
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /api/community/admin/posts — Admin lấy tất cả bài (có phân trang/lọc status)
+// ─────────────────────────────────────────────────────────────────────────────
+export const getAllAdmin = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { page = "1", limit = "20", status } = req.query as Record<string, string>;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const take = Math.min(parseInt(limit), 50);
+
+    const whereClause: any = {};
+    if (status) whereClause.status = status;
+
+    const [posts, total] = await Promise.all([
+      prisma.communityPost.findMany({
+        where: whereClause,
+        orderBy: { createdAt: "desc" },
+        skip,
+        take,
+        include: {
+          user: { select: { fullName: true, email: true, avatarUrl: true } },
+          taskLog: {
+            select: {
+              careTask: { select: { title: true } },
+            },
+          },
+          reactions: {
+            select: { type: true },
+          },
+        },
+      }),
+      prisma.communityPost.count({ where: whereClause }),
+    ]);
+
+    const formatted = posts.map((post) => {
+      const reactionCounts: Record<string, number> = {};
+      for (const r of post.reactions) {
+        reactionCounts[r.type] = (reactionCounts[r.type] ?? 0) + 1;
+      }
+      return {
+        id: post.id,
+        content: post.content,
+        imageUrl: post.imageUrl,
+        visibility: post.visibility,
+        status: post.status,
+        reportCount: post.reportCount,
+        createdAt: post.createdAt,
+        taskTitle: post.taskLog?.careTask?.title ?? null,
+        user: post.user,
+        reactionCounts,
+      };
+    });
+
+    return res.status(200).json({
+      data: formatted,
+      pagination: { page: parseInt(page), limit: take, total },
+    });
+  } catch (err) { next(err); }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DELETE /api/community/posts/:id — Admin xóa bài
+// ─────────────────────────────────────────────────────────────────────────────
+export const deletePost = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id: postId } = req.params;
+    await prisma.communityPost.delete({
+      where: { id: postId as string },
+    });
+    return res.status(200).json({ message: "Bài viết đã bị xóa." });
+  } catch (err) { next(err); }
+};
+

@@ -179,6 +179,15 @@ async function main() {
       growthReward: 5,
       verifyType: TaskVerifyType.PHOTO_OPTIONAL,
     },
+    {
+      title: "Chụp ảnh thiên nhiên xung quanh",
+      description: "Nhìn ra xung quanh và chụp một thứ gì đó xanh lá hoặc đẹp mắt.",
+      type: CareTaskType.SHORT_WALK,
+      rewardResource: PlantResourceType.SUNLIGHT,
+      rewardAmount: 20,
+      growthReward: 10,
+      verifyType: TaskVerifyType.PHOTO_REQUIRED,
+    },
   ];
 
   for (const task of defaultTasks) {

@@ -262,28 +262,47 @@ export const completeTask = async (req: Request, res: Response, next: NextFuncti
     }
 
     // ── 7. Tạo CommunityPost nếu user muốn chia sẻ ───────────────────────────
+    // Yêu cầu có ảnh mới được share (bảo vệ nội dung cộng đồng)
     let communityPost = null;
-    if (shareToCommunity) {
-      if (!careTask.isShareable) {
-        // Task không cho phép chia sẻ — bỏ qua, không báo lỗi
-        console.log(`[Community] Task ${careTask.id} is not shareable, skipping community post.`);
-      } else {
-        communityPost = await prisma.communityPost.create({
-          data: {
-            userId,
-            taskLogId: log.id,
-            content:  note ?? null,
-            imageUrl: photoUrl ?? null,
-            visibility: visibility as any,
-          },
-        });
+    let shareBonus: { resourceType: string; bonusAmount: number } | null = null;
 
-        // Cập nhật flag sharedToCommunity trong log
-        await prisma.careTaskLog.update({
-          where: { id: log.id },
-          data:  { sharedToCommunity: true },
+    if (shareToCommunity && photoUrl) {
+      communityPost = await prisma.communityPost.create({
+        data: {
+          userId,
+          taskLogId: log.id,
+          content:  note ?? null,
+          imageUrl: photoUrl,
+          visibility: visibility as any,
+        },
+      });
+
+      // Cập nhật flag sharedToCommunity trong log
+      await prisma.careTaskLog.update({
+        where: { id: log.id },
+        data:  { sharedToCommunity: true },
+      });
+
+      // ── Thưởng +5 tài nguyên khi share thành công ──
+      const SHARE_BONUS = 5;
+      if (virtualPlantId) {
+        const bonusResourceField: Record<string, object> = {
+          WATER:      { waterAmount:      { increment: SHARE_BONUS } },
+          SUNLIGHT:   { sunlightAmount:   { increment: SHARE_BONUS } },
+          FERTILIZER: { fertilizerAmount: { increment: SHARE_BONUS } },
+          AIR:        { airAmount:        { increment: SHARE_BONUS } },
+          LOVE:       { loveAmount:       { increment: SHARE_BONUS } },
+          DEW:        { dewAmount:        { increment: SHARE_BONUS } },
+        };
+        const bonusUpdate = bonusResourceField[careTask.rewardResource] ?? {};
+        updatedPlant = await prisma.virtualPlant.update({
+          where: { id: virtualPlantId },
+          data: bonusUpdate,
         });
       }
+      shareBonus = { resourceType: careTask.rewardResource, bonusAmount: SHARE_BONUS };
+    } else if (shareToCommunity && !photoUrl) {
+      console.log(`[Community] Share requested but no photo — skipping (photo required).`);
     }
 
     return res.status(201).json({
@@ -292,6 +311,7 @@ export const completeTask = async (req: Request, res: Response, next: NextFuncti
         taskLog: { ...log, sharedToCommunity: !!communityPost },
         updatedPlant,
         communityPost,
+        shareBonus,
       },
     });
   } catch (err: any) {

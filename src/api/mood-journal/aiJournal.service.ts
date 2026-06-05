@@ -2,7 +2,7 @@
 // AI Journal Service — sinh lời động viên nhẹ nhàng cho nhật ký cảm xúc
 // ═══════════════════════════════════════════════════════════════════════
 //
-// Giai đoạn MVP: gọi API OpenAI-compatible hoặc fallback tĩnh.
+// Giai đoạn MVP: gọi GitHub AI (gpt-4o-mini) hoặc fallback tĩnh.
 // Config qua .env: AI_BASE_URL, AI_API_KEY, AI_MODEL
 // ═══════════════════════════════════════════════════════════════════════
 
@@ -97,7 +97,7 @@ async function callChatCompletion(userMessage: string, systemMessage?: string): 
 }> {
   const baseUrl = process.env.AI_BASE_URL;
   const apiKey = process.env.AI_API_KEY;
-  const model = process.env.AI_MODEL || "gpt-5.5";
+  const model = process.env.AI_MODEL || "gpt-4o-mini";
 
   if (!baseUrl || !apiKey) {
     throw new Error("AI_BASE_URL or AI_API_KEY not configured");

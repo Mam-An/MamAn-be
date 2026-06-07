@@ -487,3 +487,40 @@ model Notification {
   @@index([createdAt])
   @@map("Notification")
 }
+
+// ========================
+// VƯỜN YÊN – NHẠC THƯ GIÃN
+// ========================
+
+/// Bản nhạc cho tính năng Vườn Yên, lưu file trên Supabase Storage bucket calm-music
+model CalmMusicTrack {
+  id          String  @id @default(uuid()) @db.Uuid
+
+  /// Tên hiển thị tiếng Việt trên mobile (vd. "Tiếng mưa rơi nhẹ")
+  titleVi     String  @db.VarChar(255)
+
+  /// true = nhạc có lời | false = nhạc không lời (nhạc nền/instrumental)
+  hasLyrics   Boolean @default(false)
+
+  /// Danh mục: rain | nature | piano | lofi | general ...
+  category    String  @default("general") @db.VarChar(100)
+
+  /// Đường dẫn file trong Supabase Storage (vd. "rain/1717000000-mua_roi.mp3")
+  storagePath String  @unique @db.VarChar(500)
+
+  /// Public URL để stream trực tiếp
+  publicUrl   String  @db.VarChar(500)
+
+  /// Tên file gốc khi upload (để hiển thị thông tin)
+  originalName String? @db.VarChar(255)
+
+  isActive    Boolean @default(true)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  @@index([hasLyrics])
+  @@index([category])
+  @@index([isActive])
+  @@map("CalmMusicTrack")
+}

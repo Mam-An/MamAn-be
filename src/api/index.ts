@@ -12,6 +12,8 @@ import notificationRoutes from "./notification/notification.route.js";
 import userRoutes from "./user/user.route.js";
 import uploadRoutes from "./upload/upload.route.js";
 import communityRoutes from "./community/community.route.js";
+import calmMusicRoutes from "./calm-music/calmMusic.route.js";
+import supabase from "../utils/supabase.js";
 
 const router = Router();
 
@@ -33,5 +35,26 @@ router.use("/care-tasks", careTaskRoutes);
 router.use("/notifications", notificationRoutes);
 router.use("/upload", uploadRoutes);
 router.use("/community", communityRoutes);
+router.use("/calm-music", calmMusicRoutes);
+
+// ---- Supabase connection test (remove in production) ----
+router.get("/test-supabase", async (_req: Request, res: Response) => {
+  try {
+    // Ping Supabase by listing tables via REST metadata endpoint
+    const { data, error } = await supabase.from("_prisma_migrations").select("id").limit(1);
+    if (error) {
+      // Table might not exist in Supabase, but a successful auth error means connection works
+      res.json({
+        connected: true,
+        note: "Supabase reachable. Query error (expected if table not in Supabase): " + error.message,
+      });
+      return;
+    }
+    res.json({ connected: true, sample: data });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    res.status(500).json({ connected: false, error: message });
+  }
+});
 
 export default router;

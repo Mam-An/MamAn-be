@@ -155,7 +155,7 @@ export const carePlant = async (req: Request, res: Response, next: NextFunction)
     const now = new Date();
     // Helper to format local date without timezone offset issues, just strictly using YYYY-MM-DD from ISO (UTC day) is usually fine for MVP,
     // but better to use local logic or just UTC day boundary. We'll use UTC day boundary.
-    const todayStr = now.toISOString().split("T")[0];
+    const todayStr = now.toISOString().split("T")[0] ?? '';
     const fourHoursMs = 4 * 60 * 60 * 1000;
 
     const resourceUsage = (plant.resourceUsage as Record<string, string[]>) || {};

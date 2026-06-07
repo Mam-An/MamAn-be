@@ -169,9 +169,12 @@ export const carePlant = async (req: Request, res: Response, next: NextFunction)
     }
 
     if (todayUsages.length > 0) {
-      const lastUsageDate = new Date(todayUsages[todayUsages.length - 1]);
-      if (now.getTime() - lastUsageDate.getTime() < fourHoursMs) {
-        return res.status(400).json({ message: "Cây đang tiêu hóa tài nguyên này, hãy quay lại sau vài giờ nhé." });
+      const lastUsageStr = todayUsages[todayUsages.length - 1];
+      if (lastUsageStr) {
+        const lastUsageDate = new Date(lastUsageStr);
+        if (now.getTime() - lastUsageDate.getTime() < fourHoursMs) {
+          return res.status(400).json({ message: "Cây đang tiêu hóa tài nguyên này, hãy quay lại sau vài giờ nhé." });
+        }
       }
     }
 

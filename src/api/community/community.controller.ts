@@ -7,7 +7,7 @@ function countReactions(reactions: { type: string }[]): Record<string, number> {
     LOVE: 0, LIGHT: 0, SPROUT: 0, HUG: 0, THANKS: 0,
   };
   for (const r of reactions) {
-    if (r.type in counts) counts[r.type]++;
+    if (r.type in counts) counts[r.type] = (counts[r.type] ?? 0) + 1;
   }
   return counts;
 }

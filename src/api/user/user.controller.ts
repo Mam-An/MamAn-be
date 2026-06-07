@@ -33,7 +33,7 @@ export const getAllUsers = async (req: Request, res: Response, next: NextFunctio
 
 export const toggleActive = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const { isActive } = req.body;
 
     const user = await prisma.user.update({

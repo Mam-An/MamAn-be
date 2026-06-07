@@ -120,7 +120,8 @@ export const listTracksHandler = async (req: Request, res: Response) => {
 // ── GET /calm-music/:id ───────────────────────────────────────────────────────
 export const getTrackByIdHandler = async (req: Request, res: Response) => {
   try {
-    const track = await getTrackById(req.params.id);
+    const id = req.params.id as string;
+    const track = await getTrackById(id);
     return res.status(200).json({ data: track });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
@@ -131,6 +132,7 @@ export const getTrackByIdHandler = async (req: Request, res: Response) => {
 // ── PATCH /calm-music/:id ─────────────────────────────────────────────────────
 export const updateTrackHandler = async (req: Request, res: Response) => {
   try {
+    const id = req.params.id as string;
     const { titleVi, hasLyrics, category, isActive } = req.body as {
       titleVi?: string;
       hasLyrics?: boolean;
@@ -138,7 +140,7 @@ export const updateTrackHandler = async (req: Request, res: Response) => {
       isActive?: boolean;
     };
 
-    const updated = await updateTrackRecord(req.params.id, {
+    const updated = await updateTrackRecord(id, {
       ...(titleVi !== undefined ? { titleVi: titleVi.trim() } : {}),
       ...(hasLyrics !== undefined ? { hasLyrics: Boolean(hasLyrics) } : {}),
       ...(category !== undefined ? { category: category.trim() } : {}),
@@ -158,7 +160,8 @@ export const updateTrackHandler = async (req: Request, res: Response) => {
 // ── DELETE /calm-music/:id ────────────────────────────────────────────────────
 export const deleteTrackHandler = async (req: Request, res: Response) => {
   try {
-    await deleteTrack(req.params.id);
+    const id = req.params.id as string;
+    await deleteTrack(id);
     return res.status(200).json({ message: "Xóa bản nhạc thành công." });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
@@ -169,7 +172,8 @@ export const deleteTrackHandler = async (req: Request, res: Response) => {
 // ── GET /calm-music/:id/signed-url ────────────────────────────────────────────
 export const getSignedUrlHandler = async (req: Request, res: Response) => {
   try {
-    const track = await getTrackById(req.params.id);
+    const id = req.params.id as string;
+    const track = await getTrackById(id);
     const expiresIn = parseInt((req.query.expires as string) || "3600", 10);
     const signedUrl = await getSignedUrl(track.storagePath, expiresIn);
 

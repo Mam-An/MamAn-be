@@ -8,6 +8,8 @@ import {
   updateTrackHandler,
   deleteTrackHandler,
   getSignedUrlHandler,
+  getUploadUrlHandler,
+  createTrackHandler,
 } from "./calmMusic.controller.js";
 
 const router = Router();
@@ -66,6 +68,34 @@ router.post(
   authorize("ADMIN"),
   audioUpload.single("audio"),
   uploadTrackHandler
+);
+
+/**
+ * @swagger
+ * /calm-music/upload-url:
+ *   post:
+ *     summary: Lấy signed URL để upload trực tiếp từ client lên Supabase
+ *     tags: [CalmMusic]
+ */
+router.post(
+  "/upload-url",
+  authenticate,
+  authorize("ADMIN"),
+  getUploadUrlHandler
+);
+
+/**
+ * @swagger
+ * /calm-music/track:
+ *   post:
+ *     summary: Lưu metadata bản nhạc sau khi client đã upload file thành công
+ *     tags: [CalmMusic]
+ */
+router.post(
+  "/track",
+  authenticate,
+  authorize("ADMIN"),
+  createTrackHandler
 );
 
 /**

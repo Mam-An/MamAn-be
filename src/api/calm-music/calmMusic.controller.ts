@@ -10,6 +10,7 @@ import {
   deleteTrack,
   getPublicUrl,
   getSignedUrl,
+  generateUploadUrl,
 } from "./calmMusic.service.js";
 
 // ── Chuyển tên file về dạng ASCII an toàn cho Supabase Storage ───────────────
@@ -82,6 +83,54 @@ export const uploadTrackHandler = async (req: Request, res: Response) => {
 
     return res.status(201).json({
       message: "Upload bản nhạc thành công.",
+      data: track,
+    });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    return res.status(500).json({ message });
+  }
+};
+
+// ── POST /calm-music/upload-url (Lấy URL để client tự upload) ────────────────
+export const getUploadUrlHandler = async (req: Request, res: Response) => {
+  try {
+    const { fileName, category = "general" } = req.body;
+    if (!fileName) {
+      return res.status(400).json({ message: "Thiếu fileName." });
+    }
+
+    const ext = path.extname(fileName).toLowerCase();
+    const safeName = toSafeFilename(path.parse(fileName).name) || "track";
+    const storagePath = `${category}/${Date.now()}-${safeName}${ext}`;
+
+    const { signedUrl, token } = await generateUploadUrl(storagePath);
+    return res.status(200).json({ signedUrl, token, storagePath });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    return res.status(500).json({ message });
+  }
+};
+
+// ── POST /calm-music/track (Lưu metadata sau khi client upload xong) ──────────
+export const createTrackHandler = async (req: Request, res: Response) => {
+  try {
+    const { titleVi, hasLyrics, category, storagePath, originalName } = req.body;
+    if (!storagePath || !titleVi) {
+      return res.status(400).json({ message: "Thiếu thông tin bắt buộc (titleVi, storagePath)." });
+    }
+
+    const publicUrl = getPublicUrl(storagePath);
+    const track = await createTrackRecord({
+      titleVi,
+      hasLyrics: Boolean(hasLyrics),
+      category: category || "general",
+      storagePath,
+      publicUrl,
+      originalName: originalName || titleVi,
+    });
+
+    return res.status(201).json({
+      message: "Lưu bản nhạc thành công.",
       data: track,
     });
   } catch (err: unknown) {

@@ -26,6 +26,16 @@ export async function uploadFileToStorage(
   return data.path;
 }
 
+// ── Lấy Signed Upload URL (Client-side upload bypass Vercel limit) ───────────
+export async function generateUploadUrl(filePath: string) {
+  const { data, error } = await supabase.storage
+    .from(BUCKET)
+    .createSignedUploadUrl(filePath);
+
+  if (error) throw new Error(`Không thể tạo upload URL: ${error.message}`);
+  return data; // { signedUrl, token, path }
+}
+
 // ── Tạo bản ghi metadata trong DB ────────────────────────────────────────────
 export async function createTrackRecord(params: {
   titleVi: string;

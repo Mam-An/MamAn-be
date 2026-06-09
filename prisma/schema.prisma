@@ -116,6 +116,58 @@ enum CommunityReactionType {
   THANKS
 }
 
+// ── SERVICE PLAN ENUMS ──────────────────────────────────────────────────────
+
+enum PlanCode {
+  FREE
+  VIRTUAL_PLUS
+  SUNFLOWER_COMPANION
+  SUNFLOWER_PREMIUM_GIFT
+}
+
+enum PlanType {
+  FREE
+  SUBSCRIPTION
+  ONE_TIME
+}
+
+enum PlantMode {
+  VIRTUAL
+  REAL
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  CANCELLED
+  REFUNDED
+  FULFILLING
+  COMPLETED
+}
+
+enum PaymentMethod {
+  MANUAL_BANK_TRANSFER
+  CASH
+  MOMO
+  ZALOPAY
+  OTHER
+}
+
+enum GiftRecipientType {
+  SELF
+  FRIEND
+  DONATION
+}
+
+enum ShippingStatus {
+  NOT_REQUIRED
+  PENDING
+  PREPARING
+  SHIPPING
+  DELIVERED
+  FAILED
+}
+
 // ========================
 // NHÓM TÀI KHOẢN
 // ========================
@@ -147,6 +199,10 @@ model User {
   refreshTokens    RefreshToken[]
   devices          UserDevice[]
   notifications    Notification[]
+
+  // SERVICE PLANS
+  subscriptions  UserSubscription[]
+  orders         Order[]
 
   @@map("User")
 }
@@ -226,6 +282,7 @@ model RealPlant {
   // Mỗi cây thật chỉ gắn được với 1 cây ảo (MVP)
   virtualPlant VirtualPlant?
   updates      PlantUpdate[]
+  orders       Order[]       // Đơn hàng liên kết với cây thật này
 
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
@@ -523,4 +580,126 @@ model CalmMusicTrack {
   @@index([category])
   @@index([isActive])
   @@map("CalmMusicTrack")
+}
+
+// ========================
+// HỆ THỐNG GÓI DỊCH VỤ
+// ========================
+
+/// Bảng định nghĩa gói dịch vụ (Free / Mầm Ảo Plus / Hướng Dương...)
+model ServicePlan {
+  id          String    @id @default(uuid()) @db.Uuid
+  code        PlanCode  @unique
+  name        String    @db.VarChar(255)
+  description String?   @db.Text
+  type        PlanType
+  plantMode   PlantMode
+  price       Int       // Đơn vị: VNĐ
+  durationDays Int?     // Chỉ dùng cho SUBSCRIPTION (vd. 30 ngày)
+
+  // Nhạc Góc Yên
+  includedSongs  Int @default(0) // Số bài nhạc free khi đăng ký
+  maxRedeemSongs Int @default(0) // Tổng số bài tối đa được đổi (kể cả free)
+
+  // Tính năng nâng cao
+  hasAiJournalReply   Boolean @default(false)
+  hasMoodAnalytics    Boolean @default(false)
+  hasMoodTaskSuggest  Boolean @default(false)
+
+  // Tính năng cây thật
+  hasRealPlant        Boolean @default(false)
+  hasFarmerUpdates    Boolean @default(false)
+  updateIntervalDays  Int?    // Chu kỳ cập nhật ảnh từ nhà vườn (ngày)
+  includesShipping    Boolean @default(false)
+
+  // Tính năng quà tặng (Premium Gift)
+  hasPotCustom        Boolean @default(false)
+  hasGiftCard         Boolean @default(false)
+  hasGiftPackaging    Boolean @default(false)
+
+  isActive  Boolean @default(true)
+  sortOrder Int     @default(0)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  subscriptions UserSubscription[]
+  orders        Order[]
+
+  @@map("ServicePlan")
+}
+
+/// Subscription của user (dùng cho gói SUBSCRIPTION như Mầm Ảo Plus)
+model UserSubscription {
+  id     String @id @default(uuid()) @db.Uuid
+
+  userId String @db.Uuid
+  planId String @db.Uuid
+
+  startsAt  DateTime  @default(now()) @db.Timestamptz(3)
+  endsAt    DateTime? @db.Timestamptz(3)
+
+  isActive  Boolean @default(true)
+  autoRenew Boolean @default(false)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  user User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan ServicePlan @relation(fields: [planId], references: [id])
+
+  @@index([userId])
+  @@index([planId])
+  @@index([isActive])
+  @@map("UserSubscription")
+}
+
+/// Đơn hàng — dùng cho cả gói ONE_TIME (cây thật) và pending subscription
+model Order {
+  id        String @id @default(uuid()) @db.Uuid
+  orderCode String @unique @db.VarChar(30)
+
+  userId String @db.Uuid
+  planId String @db.Uuid
+
+  status        OrderStatus    @default(PENDING)
+  paymentMethod PaymentMethod?
+  paidAt        DateTime?      @db.Timestamptz(3)
+
+  subtotalAmount Int
+  shippingFee    Int @default(0)
+  discountAmount Int @default(0)
+  totalAmount    Int
+
+  // Thông tin người nhận / giao hàng
+  recipientType    GiftRecipientType @default(SELF)
+  recipientName    String?           @db.VarChar(200)
+  recipientPhone   String?           @db.VarChar(20)
+  recipientAddress String?           @db.Text
+  recipientNote    String?           @db.Text
+
+  // Tuỳ chọn quà tặng (Premium Gift)
+  giftMessage     String? @db.Text
+  giftCardTheme   String? @db.VarChar(100)
+  potCustomOption String? @db.VarChar(255)
+  packagingOption String? @db.VarChar(255)
+
+  // Trạng thái vận chuyển
+  shippingStatus ShippingStatus @default(PENDING)
+
+  // Cây thật được gán khi đơn hàng PAID
+  realPlantId String? @db.Uuid
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan      ServicePlan  @relation(fields: [planId], references: [id])
+  realPlant RealPlant?   @relation(fields: [realPlantId], references: [id])
+
+  @@index([userId])
+  @@index([planId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("Order")
 }

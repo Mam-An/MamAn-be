@@ -1,4 +1,4 @@
-import { PrismaClient, CareTaskType, TaskVerifyType, PlantResourceType } from "../src/generated/prisma/index.js";
+import { PrismaClient, CareTaskType, TaskVerifyType, PlantResourceType, PlanCode, PlanType, PlantMode } from "../src/generated/prisma/index.js";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 import bcrypt from "bcryptjs";
@@ -204,6 +204,111 @@ async function main() {
       });
       console.log(`♻️  Task updated: ${task.title}`);
     }
+  }
+
+  // ── Service Plans ──────────────────────────────────────────────────────────
+  const servicePlans = [
+    {
+      code: PlanCode.FREE,
+      name: "Free",
+      description: "Trải nghiệm cơ bản miễn phí. Bắt đầu hành trình chăm sóc bản thân với cây ảo.",
+      type: PlanType.FREE,
+      plantMode: PlantMode.VIRTUAL,
+      price: 0,
+      durationDays: null,
+      includedSongs: 1,
+      maxRedeemSongs: 3,
+      hasAiJournalReply: false,
+      hasMoodAnalytics: false,
+      hasMoodTaskSuggest: false,
+      hasRealPlant: false,
+      hasFarmerUpdates: false,
+      updateIntervalDays: null,
+      includesShipping: false,
+      hasPotCustom: false,
+      hasGiftCard: false,
+      hasGiftPackaging: false,
+      isActive: true,
+      sortOrder: 0,
+    },
+    {
+      code: PlanCode.VIRTUAL_PLUS,
+      name: "Mầm Ảo Plus",
+      description: "Cá nhân hóa trải nghiệm với AI nhật ký, phân tích cảm xúc và gợi ý task theo tâm trạng.",
+      type: PlanType.SUBSCRIPTION,
+      plantMode: PlantMode.VIRTUAL,
+      price: 29_000,
+      durationDays: 30,
+      includedSongs: 2,
+      maxRedeemSongs: 5,
+      hasAiJournalReply: true,
+      hasMoodAnalytics: true,
+      hasMoodTaskSuggest: true,
+      hasRealPlant: false,
+      hasFarmerUpdates: false,
+      updateIntervalDays: null,
+      includesShipping: false,
+      hasPotCustom: false,
+      hasGiftCard: false,
+      hasGiftPackaging: false,
+      isActive: true,
+      sortOrder: 1,
+    },
+    {
+      code: PlanCode.SUNFLOWER_COMPANION,
+      name: "Hướng Dương Đồng Hành",
+      description: "Kết nối cây ảo với hoa hướng dương thật từ vườn. Nhà vườn chăm sóc, bạn theo dõi và nhận hoa tươi.",
+      type: PlanType.ONE_TIME,
+      plantMode: PlantMode.REAL,
+      price: 299_000,
+      durationDays: null,
+      includedSongs: 5,
+      maxRedeemSongs: 10,
+      hasAiJournalReply: true,
+      hasMoodAnalytics: true,
+      hasMoodTaskSuggest: true,
+      hasRealPlant: true,
+      hasFarmerUpdates: true,
+      updateIntervalDays: 5,
+      includesShipping: true,
+      hasPotCustom: false,
+      hasGiftCard: false,
+      hasGiftPackaging: false,
+      isActive: true,
+      sortOrder: 2,
+    },
+    {
+      code: PlanCode.SUNFLOWER_PREMIUM_GIFT,
+      name: "Hướng Dương Premium Gift",
+      description: "Gói quà tặng tinh thần trọn vẹn. Hoa thật, custom chậu, thiệp viết tay và đóng gói cao cấp.",
+      type: PlanType.ONE_TIME,
+      plantMode: PlantMode.REAL,
+      price: 399_000,
+      durationDays: null,
+      includedSongs: 10,
+      maxRedeemSongs: 20,
+      hasAiJournalReply: true,
+      hasMoodAnalytics: true,
+      hasMoodTaskSuggest: true,
+      hasRealPlant: true,
+      hasFarmerUpdates: true,
+      updateIntervalDays: 5,
+      includesShipping: true,
+      hasPotCustom: true,
+      hasGiftCard: true,
+      hasGiftPackaging: true,
+      isActive: true,
+      sortOrder: 3,
+    },
+  ];
+
+  for (const plan of servicePlans) {
+    await prisma.servicePlan.upsert({
+      where: { code: plan.code },
+      update: { ...plan },
+      create: { ...plan },
+    });
+    console.log(`✅ ServicePlan upserted: ${plan.name} (${plan.code})`);
   }
 
   console.log("🎉 Seeding completed.");

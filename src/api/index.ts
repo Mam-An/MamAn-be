@@ -13,6 +13,7 @@ import userRoutes from "./user/user.route.js";
 import uploadRoutes from "./upload/upload.route.js";
 import communityRoutes from "./community/community.route.js";
 import calmMusicRoutes from "./calm-music/calmMusic.route.js";
+import zenFlowerRoutes from "./zen-flower/zenFlower.route.js";
 import servicePlanRoutes from "./service-plan/servicePlan.route.js";
 import supabase from "../utils/supabase.js";
 
@@ -27,6 +28,7 @@ router.get("/", (_req: Request, res: Response) => {
 router.use("/auth", authRoutes);
 router.use("/users", userRoutes);
 router.use("/flower-types", flowerTypeRoutes);
+router.use("/zen-flowers", zenFlowerRoutes);
 router.use("/gardens", gardenRoutes);
 router.use("/real-plants", realPlantRoutes);
 router.use("/virtual-plants", virtualPlantRoutes);

@@ -248,19 +248,32 @@ model FlowerType {
 
   /// Ảnh theo từng giai đoạn: { "SEED": "url", "SPROUT": "url", ... }
   stageImages     Json?   // Map<PlantStatus, string>
-
-  /// Số ngày mỗi giai đoạn: { "SEED": 7, "SPROUT": 14, "GROWING": 21, "BUDDING": 14, "BLOOMING": 30 }
+  
+  /// Thời lượng riêng cho từng giai đoạn, ghi đè defaultDuration
   stageDurations  Json?   // Map<PlantStatus, number>
 
   isActive        Boolean @default(true) // Phục vụ xóa mềm
 
-  realPlants    RealPlant[]
-  virtualPlants VirtualPlant[]
+  realPlants      RealPlant[]
+  virtualPlants   VirtualPlant[]
 
-  createdAt DateTime @default(now()) @db.Timestamptz(3)
-  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  createdAt       DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime @updatedAt @db.Timestamptz(3)
 
   @@map("FlowerType")
+}
+
+/// Loại cây dành riêng cho góc Vườn Yên (thư giãn)
+model ZenFlower {
+  id              String  @id @default(uuid()) @db.Uuid
+  name            String  @unique @db.VarChar(255)
+  imageUrl        String? @db.VarChar(500) // Ảnh duy nhất của cây
+  isActive        Boolean @default(true)
+  
+  createdAt       DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime @updatedAt @db.Timestamptz(3)
+
+  @@map("ZenFlower")
 }
 
 /// Cây thật ngoài vườn của nhà vườn

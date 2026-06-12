@@ -204,6 +204,10 @@ model User {
   subscriptions  UserSubscription[]
   orders         Order[]
 
+  // POINTS & MUSIC UNLOCK
+  userPoints     UserPoints?
+  unlockedTracks UserUnlockedTrack[]
+
   @@map("User")
 }
 
@@ -584,15 +588,64 @@ model CalmMusicTrack {
   /// Tên file gốc khi upload (để hiển thị thông tin)
   originalName String? @db.VarChar(255)
 
+  /// true = nghe tự do không cần điểm; false = cần đổi điểm để mở khóa
+  isFree      Boolean @default(true)
+
+  /// Số điểm cần để mở khóa bài hát (chỉ áp dụng khi isFree = false)
+  pointCost   Int     @default(50)
+
   isActive    Boolean @default(true)
 
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
+  unlockedBy UserUnlockedTrack[]
+
   @@index([hasLyrics])
   @@index([category])
   @@index([isActive])
+  @@index([isFree])
   @@map("CalmMusicTrack")
+}
+
+/// Điểm tích lũy của user từ việc dùng tài nguyên chăm cây
+model UserPoints {
+  id          String  @id @default(uuid()) @db.Uuid
+
+  userId      String  @unique @db.Uuid
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// Tổng điểm đã tích lũy từ trước tới nay
+  totalPoints Int     @default(0)
+
+  /// Tổng điểm đã tiêu (dùng để mở khóa nhạc)
+  spentPoints Int     @default(0)
+
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@map("UserPoints")
+}
+
+/// Lịch sử bài hát user đã mở khóa bằng điểm
+model UserUnlockedTrack {
+  id          String  @id @default(uuid()) @db.Uuid
+
+  userId      String  @db.Uuid
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  trackId     String  @db.Uuid
+  track       CalmMusicTrack @relation(fields: [trackId], references: [id], onDelete: Cascade)
+
+  /// Số điểm đã dùng để mở khóa bài này
+  pointsSpent Int
+
+  unlockedAt  DateTime @default(now()) @db.Timestamptz(3)
+
+  /// Mỗi user chỉ mở khóa 1 bài 1 lần
+  @@unique([userId, trackId])
+  @@index([userId])
+  @@map("UserUnlockedTrack")
 }
 
 // ========================

@@ -15,6 +15,7 @@ import communityRoutes from "./community/community.route.js";
 import calmMusicRoutes from "./calm-music/calmMusic.route.js";
 import zenFlowerRoutes from "./zen-flower/zenFlower.route.js";
 import servicePlanRoutes from "./service-plan/servicePlan.route.js";
+import pointsRoutes from "./points/points.route.js";
 import supabase from "../utils/supabase.js";
 
 const router = Router();
@@ -39,6 +40,7 @@ router.use("/notifications", notificationRoutes);
 router.use("/upload", uploadRoutes);
 router.use("/community", communityRoutes);
 router.use("/calm-music", calmMusicRoutes);
+router.use("/points", pointsRoutes);
 // Service Plan routes — mounted at root level (handles /plans, /orders, /me, /admin/*)
 router.use("/", servicePlanRoutes);
 

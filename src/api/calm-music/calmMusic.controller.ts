@@ -144,6 +144,7 @@ export const createTrackHandler = async (req: Request, res: Response) => {
 export const listTracksHandler = async (req: Request, res: Response) => {
   try {
     const { category, hasLyrics } = req.query;
+    const userId = req.user?.id;
 
     const filters: { category?: string; hasLyrics?: boolean } = {};
     if (category) filters.category = category as string;
@@ -153,7 +154,7 @@ export const listTracksHandler = async (req: Request, res: Response) => {
       );
     }
 
-    const tracks = await listTracks(filters);
+    const tracks = await listTracks(filters, userId);
 
     return res.status(200).json({
       message: "Lấy danh sách bản nhạc thành công.",
@@ -182,11 +183,13 @@ export const getTrackByIdHandler = async (req: Request, res: Response) => {
 export const updateTrackHandler = async (req: Request, res: Response) => {
   try {
     const id = req.params.id as string;
-    const { titleVi, hasLyrics, category, isActive } = req.body as {
+    const { titleVi, hasLyrics, category, isActive, isFree, pointCost } = req.body as {
       titleVi?: string;
       hasLyrics?: boolean;
       category?: string;
       isActive?: boolean;
+      isFree?: boolean;
+      pointCost?: number;
     };
 
     const updated = await updateTrackRecord(id, {
@@ -194,6 +197,8 @@ export const updateTrackHandler = async (req: Request, res: Response) => {
       ...(hasLyrics !== undefined ? { hasLyrics: Boolean(hasLyrics) } : {}),
       ...(category !== undefined ? { category: category.trim() } : {}),
       ...(isActive !== undefined ? { isActive: Boolean(isActive) } : {}),
+      ...(isFree !== undefined ? { isFree: Boolean(isFree) } : {}),
+      ...(pointCost !== undefined ? { pointCost: Number(pointCost) } : {}),
     });
 
     return res.status(200).json({

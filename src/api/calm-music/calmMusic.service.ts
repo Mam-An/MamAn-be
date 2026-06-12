@@ -48,13 +48,12 @@ export async function createTrackRecord(params: {
   return prisma.calmMusicTrack.create({ data: params });
 }
 
-// ── Lấy danh sách bản nhạc từ DB (có filter) ─────────────────────────────────
-export async function listTracks(filters: {
-  category?: string;
-  hasLyrics?: boolean;
-  isActive?: boolean;
-}) {
-  return prisma.calmMusicTrack.findMany({
+// ── Lấy danh sách bản nhạc từ DB (có filter + trạng thái unlock) ─────────────────
+export async function listTracks(
+  filters: { category?: string; hasLyrics?: boolean; isActive?: boolean },
+  userId?: string
+) {
+  const tracks = await prisma.calmMusicTrack.findMany({
     where: {
       ...(filters.category ? { category: filters.category } : {}),
       ...(filters.hasLyrics !== undefined ? { hasLyrics: filters.hasLyrics } : {}),
@@ -62,6 +61,19 @@ export async function listTracks(filters: {
     },
     orderBy: { createdAt: "desc" },
   });
+
+  if (!userId) return tracks.map((t) => ({ ...t, isUnlocked: t.isFree }));
+
+  const unlocked = await prisma.userUnlockedTrack.findMany({
+    where: { userId },
+    select: { trackId: true },
+  });
+  const unlockedSet = new Set(unlocked.map((u) => u.trackId));
+
+  return tracks.map((t) => ({
+    ...t,
+    isUnlocked: t.isFree || unlockedSet.has(t.id),
+  }));
 }
 
 // ── Lấy chi tiết một bản nhạc ─────────────────────────────────────────────────
@@ -74,7 +86,14 @@ export async function getTrackById(id: string) {
 // ── Cập nhật metadata bản nhạc ────────────────────────────────────────────────
 export async function updateTrackRecord(
   id: string,
-  data: { titleVi?: string; hasLyrics?: boolean; category?: string; isActive?: boolean }
+  data: {
+    titleVi?: string;
+    hasLyrics?: boolean;
+    category?: string;
+    isActive?: boolean;
+    isFree?: boolean;
+    pointCost?: number;
+  }
 ) {
   return prisma.calmMusicTrack.update({ where: { id }, data });
 }

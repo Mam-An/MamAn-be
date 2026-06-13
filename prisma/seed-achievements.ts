@@ -31,6 +31,13 @@ const DEFINITIONS = [
     progressKey: 'carePlantCount', targetProgress: 100, sortOrder: 13,
   },
   {
+    slug: 'tc_care_200',       emoji: '🌻', title: 'Bậc thầy làm vườn',
+    description: 'Hơn 200 lần tận tụy chăm sóc những mầm xanh',
+    category: 'TREE_CARE' as const,
+    requirement: 'Chăm sóc cây 200 lần',
+    progressKey: 'carePlantCount', targetProgress: 200, sortOrder: 13,
+  },
+  {
     slug: 'tc_resource_5',     emoji: '🌾', title: 'Người nông dân tập sự',
     description: 'Đã bón tài nguyên cho cây 5 lần',
     category: 'TREE_CARE' as const,
@@ -75,6 +82,13 @@ const DEFINITIONS = [
     progressKey: 'zenSessionCount', targetProgress: 50, sortOrder: 23,
   },
   {
+    slug: 'wl_zen_100',        emoji: '🪷', title: 'Chánh niệm sâu sắc',
+    description: 'Đạt mốc 100 phiên tịnh tâm, thấu hiểu chính mình',
+    category: 'WELLNESS' as const,
+    requirement: 'Hoàn thành 100 phiên Vườn Yên',
+    progressKey: 'zenSessionCount', targetProgress: 100, sortOrder: 23,
+  },
+  {
     slug: 'wl_minutes_60',     emoji: '⏳', title: 'Một giờ bình yên',
     description: 'Tích lũy đủ 60 phút thư giãn cùng cây',
     category: 'WELLNESS' as const,
@@ -112,6 +126,13 @@ const DEFINITIONS = [
     progressKey: 'journalCount', targetProgress: 30, sortOrder: 32,
   },
   {
+    slug: 'jn_100',            emoji: '📚', title: 'Người ghi chép kỷ niệm',
+    description: '100 trang nhật ký của những vui buồn đã qua',
+    category: 'JOURNAL' as const,
+    requirement: 'Viết 100 nhật ký',
+    progressKey: 'journalCount', targetProgress: 100, sortOrder: 32,
+  },
+  {
     slug: 'jn_days_7',         emoji: '🌅', title: 'Một tuần ghi nhận',
     description: 'Ghi nhận cảm xúc trong 7 ngày khác nhau',
     category: 'JOURNAL' as const,
@@ -124,6 +145,13 @@ const DEFINITIONS = [
     category: 'JOURNAL' as const,
     requirement: 'Ghi nhật ký trong 30 ngày',
     progressKey: 'journalDays', targetProgress: 30, sortOrder: 34,
+  },
+  {
+    slug: 'jn_days_100',       emoji: '💌', title: 'Người bạn tâm giao',
+    description: 'Đã ghi nhận cảm xúc trong 100 ngày',
+    category: 'JOURNAL' as const,
+    requirement: 'Ghi nhật ký trong 100 ngày',
+    progressKey: 'journalDays', targetProgress: 100, sortOrder: 35,
   },
 
   // ── JOURNEY ────────────────────────────────────────────────────────────────
@@ -154,6 +182,13 @@ const DEFINITIONS = [
     category: 'JOURNEY' as const,
     requirement: 'Dùng app 100 ngày liên tiếp',
     progressKey: 'streakDays', targetProgress: 100, sortOrder: 43,
+  },
+  {
+    slug: 'jy_streak_365',     emoji: '🌟', title: 'Một năm đáng nhớ',
+    description: 'Trải qua 365 ngày đồng hành cùng khu vườn',
+    category: 'JOURNEY' as const,
+    requirement: 'Dùng app 365 ngày liên tiếp',
+    progressKey: 'streakDays', targetProgress: 365, sortOrder: 44,
   },
 ];
 

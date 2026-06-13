@@ -52,7 +52,7 @@ export const getUserAchievementsById = async (
 ) => {
   try {
     const requesterId = req.user!.id;
-    const { id: targetUserId } = req.params;
+    const targetUserId = req.params.id as string;
 
     // Chỉ cho phép xem của chính mình hoặc admin
     if (requesterId !== targetUserId && req.user!.role !== "ADMIN") {

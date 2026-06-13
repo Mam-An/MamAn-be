@@ -44,6 +44,8 @@ export async function createTrackRecord(params: {
   storagePath: string;
   publicUrl: string;
   originalName: string;
+  isFree?: boolean;
+  pointCost?: number;
 }) {
   return prisma.calmMusicTrack.create({ data: params });
 }

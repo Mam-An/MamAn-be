@@ -61,6 +61,10 @@ export const uploadTrackHandler = async (req: Request, res: Response) => {
     const hasLyrics = ["true", "1", "yes"].includes(
       String(req.body.hasLyrics).toLowerCase()
     );
+    const isFree = req.body.isFree !== undefined
+      ? ["true", "1", "yes"].includes(String(req.body.isFree).toLowerCase())
+      : true;
+    const pointCost = req.body.pointCost ? Number(req.body.pointCost) : 50;
 
     // Tạo path an toàn cho Supabase Storage
     const ext = path.extname(originalname).toLowerCase();
@@ -79,6 +83,8 @@ export const uploadTrackHandler = async (req: Request, res: Response) => {
       storagePath: uploadedPath,
       publicUrl,
       originalName: originalname,
+      isFree,
+      pointCost: isFree ? 0 : pointCost,
     });
 
     return res.status(201).json({
@@ -114,12 +120,14 @@ export const getUploadUrlHandler = async (req: Request, res: Response) => {
 // ── POST /calm-music/track (Lưu metadata sau khi client upload xong) ──────────
 export const createTrackHandler = async (req: Request, res: Response) => {
   try {
-    const { titleVi, hasLyrics, category, storagePath, originalName } = req.body;
+    const { titleVi, hasLyrics, category, storagePath, originalName, isFree, pointCost } = req.body;
     if (!storagePath || !titleVi) {
       return res.status(400).json({ message: "Thiếu thông tin bắt buộc (titleVi, storagePath)." });
     }
 
     const publicUrl = getPublicUrl(storagePath);
+    const freeStatus = isFree !== undefined ? Boolean(isFree) : true;
+    
     const track = await createTrackRecord({
       titleVi,
       hasLyrics: Boolean(hasLyrics),
@@ -127,6 +135,8 @@ export const createTrackHandler = async (req: Request, res: Response) => {
       storagePath,
       publicUrl,
       originalName: originalName || titleVi,
+      isFree: freeStatus,
+      pointCost: freeStatus ? 0 : (pointCost ? Number(pointCost) : 50),
     });
 
     return res.status(201).json({

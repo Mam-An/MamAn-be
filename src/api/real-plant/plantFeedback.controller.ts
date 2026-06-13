@@ -22,15 +22,19 @@ export const reactToPlant = async (req: Request, res: Response, next: NextFuncti
     });
     if (!plant) return res.status(404).json({ message: "Không tìm thấy cây" });
 
-    // Kiểm tra user có đơn hàng có cây này không
-    const userOrder = await prisma.order.findFirst({
-      where: {
-        userId,
-        realPlantId,
-        status: { in: ["PAID", "FULFILLING", "COMPLETED"] },
-      },
-    });
-    if (!userOrder) {
+    // Kiểm tra quyền: user phải có VirtualPlant được gắn với cây thật này
+    // HOẶC có Order hợp lệ chứa cây thật này
+    const hasAccess = await (async () => {
+      const vp = await prisma.virtualPlant.findFirst({
+        where: { userId, realPlantId },
+      });
+      if (vp) return true;
+      const order = await prisma.order.findFirst({
+        where: { userId, realPlantId, status: { in: ["PAID", "FULFILLING", "COMPLETED"] } },
+      });
+      return !!order;
+    })();
+    if (!hasAccess) {
       return res.status(403).json({ message: "Bạn không có quyền react cho cây này" });
     }
 
@@ -110,15 +114,19 @@ export const addComment = async (req: Request, res: Response, next: NextFunction
     });
     if (!plant) return res.status(404).json({ message: "Không tìm thấy cây" });
 
-    // Kiểm tra user có đơn hàng gắn với cây này
-    const userOrder = await prisma.order.findFirst({
-      where: {
-        userId,
-        realPlantId,
-        status: { in: ["PAID", "FULFILLING", "COMPLETED"] },
-      },
-    });
-    if (!userOrder) {
+    // Kiểm tra quyền: user phải có VirtualPlant được gắn với cây thật này
+    // HOẶC có Order hợp lệ chứa cây thật này
+    const hasAccess = await (async () => {
+      const vp = await prisma.virtualPlant.findFirst({
+        where: { userId, realPlantId },
+      });
+      if (vp) return true;
+      const order = await prisma.order.findFirst({
+        where: { userId, realPlantId, status: { in: ["PAID", "FULFILLING", "COMPLETED"] } },
+      });
+      return !!order;
+    })();
+    if (!hasAccess) {
       return res.status(403).json({ message: "Bạn không có quyền bình luận cho cây này" });
     }
 

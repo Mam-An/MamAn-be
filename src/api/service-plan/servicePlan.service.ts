@@ -470,10 +470,25 @@ export async function adminAssignRealPlant(orderId: string, realPlantId: string)
       where: { id: realPlantId },
       data: { isAssigned: true },
     });
-    return tx.order.update({
+
+    const updatedOrder = await tx.order.update({
       where: { id: orderId },
       data: { realPlantId },
       include: { plan: true, realPlant: true },
     });
+
+    // Liên kết VirtualPlant của user với cây thật
+    // để mobile app có thể lấy realPlantId qua plant.realPlant.id
+    const virtualPlant = await tx.virtualPlant.findFirst({
+      where: { userId: order.userId },
+    });
+    if (virtualPlant) {
+      await tx.virtualPlant.update({
+        where: { id: virtualPlant.id },
+        data: { realPlantId },
+      });
+    }
+
+    return updatedOrder;
   });
 }

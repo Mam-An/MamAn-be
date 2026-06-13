@@ -83,11 +83,11 @@ export async function getUserCurrentPlan(userId: string) {
     orderBy: { startsAt: "desc" },
   });
 
-  // 2. Kiểm tra order PAID cho gói cây thật
+  // 2. Kiểm tra order PAID/FULFILLING/COMPLETED cho gói cây thật
   const paidRealOrder = await prisma.order.findFirst({
     where: {
       userId,
-      status: "PAID",
+      status: { in: ["PAID", "FULFILLING", "COMPLETED"] },
       plan: { hasRealPlant: true },
     },
     include: { plan: true },

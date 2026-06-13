@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from "express";
 import prisma from "../../utils/prisma.js";
 import { generateCareThankYou } from "../mood-journal/aiJournal.service.js";
 import { addPointsFromTask } from "../points/points.service.js";
+import { refreshUserAchievements } from "../achievement/achievement.service.js";
 
 // POST /api/virtual-plants/start  — user chọn hoa, BE tìm cây thật còn trống rồi tạo cây ảo
 export const start = async (req: Request, res: Response, next: NextFunction) => {
@@ -198,6 +199,9 @@ export const carePlant = async (req: Request, res: Response, next: NextFunction)
 
     // Cộng điểm tích lũy cho user khi dùng tài nguyên chăm cây
     await addPointsFromTask(userId, resourceType as string, amount);
+
+    // Refresh achievement progress (background)
+    refreshUserAchievements(userId).catch(() => {});
 
     // Lấy lời cảm ơn từ AI (có thể tốn vài giây)
     const aiMessage = await generateCareThankYou(resourceType as string, plant.nickname || undefined);

@@ -3,6 +3,7 @@ import prisma from "../../utils/prisma.js";
 import { generateJournalReply } from "./aiJournal.service.js";
 import type { QueryMoodJournalDto } from "./moodJournal.schema.js";
 import type { Prisma } from "../../generated/prisma/index.js";
+import { refreshUserAchievements } from "../achievement/achievement.service.js";
 
 // ── POST /api/v1/mood-journals ──────────────────────────────────────
 // TODO: rate limit — MVP chưa giới hạn số journal/ngày
@@ -33,6 +34,9 @@ export const create = async (req: Request, res: Response, next: NextFunction) =>
         aiMetadata: aiResult.metadata as Prisma.InputJsonValue ?? undefined,
       },
     });
+
+    // Refresh achievement progress (background)
+    refreshUserAchievements(userId).catch(() => {});
 
     return res.status(201).json({
       message: "Journal created successfully",

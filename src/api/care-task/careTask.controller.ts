@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from "express";
 import prisma from "../../utils/prisma.js";
 import { deleteCloudinaryImage } from "../../middlewares/upload.middleware.js";
 import { addPointsFromTask } from "../points/points.service.js";
+import { refreshUserAchievements } from "../achievement/achievement.service.js";
 
 // ── Seeded PRNG (mulberry32) — deterministic random từ seed số nguyên ─────────
 function seededRandom(seed: number) {
@@ -308,6 +309,15 @@ export const completeTask = async (req: Request, res: Response, next: NextFuncti
     } else if (shareToCommunity && !photoUrl) {
       console.log(`[Community] Share requested but no photo — skipping (photo required).`);
     }
+
+    // ── 8. Refresh achievement progress (background, không block response) ────
+    refreshUserAchievements(userId)
+      .then(({ newlyUnlocked }) => {
+        if (newlyUnlocked.length > 0) {
+          console.log(`[Achievement] User ${userId} unlocked: ${newlyUnlocked.join(", ")}`);
+        }
+      })
+      .catch((err) => console.error("[Achievement] refresh failed:", err));
 
     return res.status(201).json({
       message: "Task completed successfully",

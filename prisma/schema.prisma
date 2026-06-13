@@ -211,6 +211,10 @@ model User {
   // ACHIEVEMENTS
   userAchievements UserAchievement[]
 
+  // PLANT FEEDBACK
+  plantReactions PlantReaction[]
+  plantComments  PlantComment[]
+
   @@map("User")
 }
 
@@ -304,6 +308,10 @@ model RealPlant {
   updates      PlantUpdate[]
   orders       Order[]       // Đơn hàng liên kết với cây thật này
 
+  // Phản hồi từ user
+  reactions PlantReaction[]
+  comments  PlantComment[]
+
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
@@ -311,6 +319,41 @@ model RealPlant {
   @@index([flowerTypeId])
   @@index([flowerTypeId, isAssigned, status]) // Index cho query tìm cây còn trống
   @@map("RealPlant")
+}
+
+/// Cảm xúc user thả cho cây thật
+model PlantReaction {
+  id          String  @id @default(uuid()) @db.Uuid
+  emoji       String  @db.VarChar(10) // ❤️ 🌸 😊 💪 🌿
+
+  realPlantId String    @db.Uuid
+  realPlant   RealPlant @relation(fields: [realPlantId], references: [id], onDelete: Cascade)
+
+  userId String @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@unique([realPlantId, userId])          // Mỗi user chỉ react 1 lần / cây
+  @@index([realPlantId])
+  @@map("PlantReaction")
+}
+
+/// Bình luận user gửi cho nhà vườn
+model PlantComment {
+  id      String @id @default(uuid()) @db.Uuid
+  content String @db.VarChar(500)
+
+  realPlantId String    @db.Uuid
+  realPlant   RealPlant @relation(fields: [realPlantId], references: [id], onDelete: Cascade)
+
+  userId String @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([realPlantId])
+  @@map("PlantComment")
 }
 
 /// Cây ảo của user trong app, gắn 1-1 với cây thật

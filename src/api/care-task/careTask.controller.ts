@@ -1,7 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import prisma from "../../utils/prisma.js";
 import { deleteCloudinaryImage } from "../../middlewares/upload.middleware.js";
-import { addPointsFromTask } from "../points/points.service.js";
 import { refreshUserAchievements } from "../achievement/achievement.service.js";
 
 // ── Seeded PRNG (mulberry32) — deterministic random từ seed số nguyên ─────────
@@ -262,8 +261,7 @@ export const completeTask = async (req: Request, res: Response, next: NextFuncti
         },
       });
 
-      // Cộng điểm tích lũy — chỉ khi task gắn với cây ảo (user đã dùng tài nguyên)
-      await addPointsFromTask(userId, careTask.rewardResource, careTask.rewardAmount);
+      // Điểm tích lũy KHÔNG cộng ở đây — chỉ cộng khi user bón tài nguyên cho cây (virtualPlant/feed)
     }
 
     // ── 7. Tạo CommunityPost nếu user muốn chia sẻ ───────────────────────────

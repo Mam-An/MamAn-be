@@ -3,6 +3,11 @@ import { authenticate, authorize } from "../../middlewares/auth.middleware.js";
 import { validateBody } from "../../middlewares/validate.middleware.js";
 import { getAll, getOne, create, update, batchCreate } from "./realPlant.controller.js";
 import { createRealPlantSchema, updateRealPlantSchema } from "./realPlant.schema.js";
+import {
+  reactToPlant, getReactions,
+  addComment, getComments,
+  getFeedbackSummary,
+} from "./plantFeedback.controller.js";
 
 const router = Router();
 
@@ -157,5 +162,22 @@ router.post("/", authenticate, authorize("ADMIN", "FARMER"), validateBody(create
  *         description: RealPlant updated
  */
 router.put("/:id", authenticate, authorize("ADMIN", "FARMER"), validateBody(updateRealPlantSchema), update);
+
+// ── Feedback routes (user: react + comment; farmer: summary) ─────────────
+
+// GET /real-plants/feedback-summary  [FARMER | ADMIN]
+router.get("/feedback-summary", authenticate, authorize("ADMIN", "FARMER"), getFeedbackSummary);
+
+// POST /real-plants/:id/react  [USER]
+router.post("/:id/react", authenticate, reactToPlant);
+
+// GET  /real-plants/:id/reactions  [authenticated]
+router.get("/:id/reactions", authenticate, getReactions);
+
+// POST /real-plants/:id/comments  [USER]
+router.post("/:id/comments", authenticate, addComment);
+
+// GET  /real-plants/:id/comments  [authenticated]
+router.get("/:id/comments", authenticate, getComments);
 
 export default router;

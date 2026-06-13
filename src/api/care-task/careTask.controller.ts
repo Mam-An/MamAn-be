@@ -260,10 +260,10 @@ export const completeTask = async (req: Request, res: Response, next: NextFuncti
           streakCount: yesterdayLog ? { increment: 1 } : 1,
         },
       });
-    }
 
-    // ── Cộng điểm tích lũy cho user — luôn cộng dù có hay không có cây ảo ─────
-    await addPointsFromTask(userId, careTask.rewardResource, careTask.rewardAmount);
+      // Cộng điểm tích lũy — chỉ khi task gắn với cây ảo (user đã dùng tài nguyên)
+      await addPointsFromTask(userId, careTask.rewardResource, careTask.rewardAmount);
+    }
 
     // ── 7. Tạo CommunityPost nếu user muốn chia sẻ ───────────────────────────
     // Yêu cầu có ảnh mới được share (bảo vệ nội dung cộng đồng)

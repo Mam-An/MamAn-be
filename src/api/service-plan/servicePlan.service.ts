@@ -130,6 +130,15 @@ export async function getUserEntitlements(userId: string) {
     planName: plan.name,
     subscriptionEndsAt: subscription?.endsAt ?? null,
     hasRealPlantOrder: !!paidRealOrder,
+    currentRealOrderId: paidRealOrder?.id ?? null,
+    shippingInfo: paidRealOrder ? {
+      recipientType: paidRealOrder.recipientType,
+      recipientName: paidRealOrder.recipientName,
+      recipientPhone: paidRealOrder.recipientPhone,
+      recipientAddress: paidRealOrder.recipientAddress,
+      recipientNote: paidRealOrder.recipientNote,
+      shippingStatus: paidRealOrder.shippingStatus,
+    } : null,
 
     // Nhạc
     includedSongs: plan.includedSongs,
@@ -254,6 +263,39 @@ export async function getOrderById(orderId: string, userId?: string) {
   });
   if (!order) throw new Error("Không tìm thấy đơn hàng.");
   return order;
+}
+
+/** Cập nhật thông tin giao hàng cho đơn hàng của user */
+export async function updateOrderShippingInfo(
+  orderId: string,
+  userId: string,
+  data: {
+    recipientName?: string;
+    recipientPhone?: string;
+    recipientAddress?: string;
+    recipientNote?: string;
+    recipientType?: GiftRecipientType;
+  }
+) {
+  const order = await prisma.order.findFirst({
+    where: { id: orderId, userId },
+  });
+  if (!order) throw new Error("Không tìm thấy đơn hàng hoặc bạn không có quyền.");
+
+  if (["DELIVERED", "FAILED"].includes(order.shippingStatus)) {
+    throw new Error("Không thể sửa thông tin khi đơn hàng đã giao hoặc thất bại.");
+  }
+
+  return prisma.order.update({
+    where: { id: orderId },
+    data: {
+      recipientName: data.recipientName ?? order.recipientName,
+      recipientPhone: data.recipientPhone ?? order.recipientPhone,
+      recipientAddress: data.recipientAddress ?? order.recipientAddress,
+      recipientNote: data.recipientNote ?? order.recipientNote,
+      recipientType: data.recipientType ?? order.recipientType,
+    },
+  });
 }
 
 // ============================================================================

@@ -9,6 +9,7 @@ import {
   getMyOrders,
   getOrderByIdHandler,
   subscribeVirtualPlus,
+  updateOrderShippingInfoHandler,
   // Admin
   adminGetPlans,
   adminCreatePlan,
@@ -49,6 +50,9 @@ router.get("/orders/:id", authenticate, getOrderByIdHandler);
 
 /** POST /api/v1/subscriptions/virtual-plus — Tạo đơn đăng ký Mầm Ảo Plus */
 router.post("/subscriptions/virtual-plus", authenticate, subscribeVirtualPlus);
+
+/** PATCH /api/v1/orders/:id/shipping-info — Sửa địa chỉ nhận hàng của user */
+router.patch("/orders/:id/shipping-info", authenticate, updateOrderShippingInfoHandler);
 
 // ── ADMIN ─────────────────────────────────────────────────────────────────────
 

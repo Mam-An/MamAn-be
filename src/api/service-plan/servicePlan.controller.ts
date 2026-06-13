@@ -18,6 +18,7 @@ import {
   adminUpdateShippingStatus,
   getAvailableRealPlants,
   adminAssignRealPlant,
+  updateOrderShippingInfo,
 } from "./servicePlan.service.js";
 import {
   createOrderSchema,
@@ -138,6 +139,21 @@ export const subscribeVirtualPlus = async (req: Request, res: Response) => {
       message: "Tạo đơn đăng ký Mầm Ảo Plus thành công. Vui lòng thanh toán và chờ admin xác nhận.",
       metadata: order,
     });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    return res.status(400).json({ message });
+  }
+};
+
+/** PATCH /api/v1/orders/:id/shipping-info — Cập nhật địa chỉ nhận hàng */
+export const updateOrderShippingInfoHandler = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const orderId = req.params.id as string;
+    const data = req.body;
+    
+    const updatedOrder = await updateOrderShippingInfo(orderId, userId, data);
+    return res.json({ message: "Cập nhật thông tin giao hàng thành công.", metadata: updatedOrder });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     return res.status(400).json({ message });

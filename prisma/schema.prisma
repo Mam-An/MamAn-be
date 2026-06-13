@@ -32,58 +32,57 @@ model RefreshToken {
 // ENUMS
 // ========================
 
-
 enum UserRole {
-  USER    // Người dùng app
-  FARMER  // Nhà vườn
-  ADMIN   // Quản trị viên
+  USER // Người dùng app
+  FARMER // Nhà vườn
+  ADMIN // Quản trị viên
 }
 
 /// Vòng đời cây từ gieo hạt đến nở hoa
 enum PlantStatus {
-  SEED        // Hạt giống mới gieo
-  SPROUT      // Đang nảy mầm
-  GROWING     // Đang sinh trưởng
-  BUDDING     // Đang hình thành nụ
-  BLOOMING    // Đang nở hoa
-  RESTING     // Nghỉ ngơi / không phát triển
-  NEEDS_CARE  // Cần chăm sóc khẩn cấp
-  COMPLETED   // Hoàn thành vòng đời
+  SEED // Hạt giống mới gieo
+  SPROUT // Đang nảy mầm
+  GROWING // Đang sinh trưởng
+  BUDDING // Đang hình thành nụ
+  BLOOMING // Đang nở hoa
+  RESTING // Nghỉ ngơi / không phát triển
+  NEEDS_CARE // Cần chăm sóc khẩn cấp
+  COMPLETED // Hoàn thành vòng đời
 }
 
 /// Loại cảm xúc của user (icon-based)
 enum MoodType {
-  HAPPY     // Vui
-  CALM      // Bình yên
-  NORMAL    // Bình thường
-  SAD       // Buồn
-  ANXIOUS   // Lo lắng
-  TIRED     // Mệt mỏi
+  HAPPY // Vui
+  CALM // Bình yên
+  NORMAL // Bình thường
+  SAD // Buồn
+  ANXIOUS // Lo lắng
+  TIRED // Mệt mỏi
 }
 
 /// Trạng thái duyệt vườn
 enum GardenStatus {
-  PENDING   // Chờ admin duyệt
-  APPROVED  // Đã được duyệt
-  REJECTED  // Bị từ chối
+  PENDING // Chờ admin duyệt
+  APPROVED // Đã được duyệt
+  REJECTED // Bị từ chối
 }
 
 /// Loại nhiệm vụ chăm sóc nhỏ hàng ngày
 enum CareTaskType {
-  WATER_PLANT   // Tưới cây ảo
-  BREATHING     // Thở chậm 1 phút
-  DRINK_WATER   // Uống một ly nước
+  WATER_PLANT // Tưới cây ảo
+  BREATHING // Thở chậm 1 phút
+  DRINK_WATER // Uống một ly nước
   WRITE_JOURNAL // Viết một dòng nhật ký
-  LISTEN_SOUND  // Nghe âm thanh thư giãn
-  SHORT_WALK    // Đi dạo ngắn
+  LISTEN_SOUND // Nghe âm thanh thư giãn
+  SHORT_WALK // Đi dạo ngắn
 }
 
 /// Loại xác nhận hoàn thành nhiệm vụ
 enum TaskVerifyType {
-  SELF_CONFIRM    // Tự xác nhận
-  TIMER           // Đếm ngược
-  PHOTO_REQUIRED  // Bắt buộc ảnh
-  PHOTO_OPTIONAL  // Ảnh tuỳ chọn
+  SELF_CONFIRM // Tự xác nhận
+  TIMER // Đếm ngược
+  PHOTO_REQUIRED // Bắt buộc ảnh
+  PHOTO_OPTIONAL // Ảnh tuỳ chọn
 }
 
 /// Tài nguyên thưởng cho cây ảo
@@ -173,16 +172,16 @@ enum ShippingStatus {
 // ========================
 
 model User {
-  id           String   @id @default(uuid()) @db.Uuid
-  email        String   @unique @db.VarChar(254)
-  passwordHash String   @db.VarChar(255)
-  fullName     String?  @db.VarChar(150)
-  avatarUrl    String?  @db.VarChar(500)
-  role         UserRole @default(USER)
-  isActive     Boolean  @default(true)
-  expoPushToken String? @db.VarChar(500) // Expo push token từ thiết bị mobile
-  createdAt    DateTime @default(now()) @db.Timestamptz(3)
-  updatedAt    DateTime @updatedAt @db.Timestamptz(3)
+  id            String   @id @default(uuid()) @db.Uuid
+  email         String   @unique @db.VarChar(254)
+  passwordHash  String   @db.VarChar(255)
+  fullName      String?  @db.VarChar(150)
+  avatarUrl     String?  @db.VarChar(500)
+  role          UserRole @default(USER)
+  isActive      Boolean  @default(true)
+  expoPushToken String?  @db.VarChar(500) // Expo push token từ thiết bị mobile
+  createdAt     DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime @updatedAt @db.Timestamptz(3)
 
   // FARMER: quản lý nhiều vườn
   gardens      Garden[]      @relation("FarmerGardens")
@@ -190,19 +189,19 @@ model User {
   plantUpdates PlantUpdate[] @relation("FarmerPlantUpdates")
 
   // USER: trồng cây ảo, ghi nhật ký, làm task
-  virtualPlants    VirtualPlant[]
-  moodJournals     MoodJournal[]
-  careTaskLogs     CareTaskLog[]
-  communityPosts   CommunityPost[]
+  virtualPlants      VirtualPlant[]
+  moodJournals       MoodJournal[]
+  careTaskLogs       CareTaskLog[]
+  communityPosts     CommunityPost[]
   communityReactions CommunityReaction[]
-  communityReports CommunityReport[]   @relation("UserReports")
-  refreshTokens    RefreshToken[]
-  devices          UserDevice[]
-  notifications    Notification[]
+  communityReports   CommunityReport[]   @relation("UserReports")
+  refreshTokens      RefreshToken[]
+  devices            UserDevice[]
+  notifications      Notification[]
 
   // SERVICE PLANS
-  subscriptions  UserSubscription[]
-  orders         Order[]
+  subscriptions UserSubscription[]
+  orders        Order[]
 
   // POINTS & MUSIC UNLOCK
   userPoints     UserPoints?
@@ -229,8 +228,8 @@ model Garden {
   description    String?      @db.Text
   imageUrl       String?      @db.VarChar(500)
   isActive       Boolean      @default(true)
-  status         GardenStatus @default(PENDING)   // Chờ duyệt khi farmer tạo
-  rejectedReason String?      @db.Text             // Lý do từ chối (admin điền)
+  status         GardenStatus @default(PENDING) // Chờ duyệt khi farmer tạo
+  rejectedReason String?      @db.Text // Lý do từ chối (admin điền)
 
   farmerId String @db.Uuid
   farmer   User   @relation("FarmerGardens", fields: [farmerId], references: [id], onDelete: Restrict)
@@ -255,34 +254,34 @@ model FlowerType {
   name            String  @unique @db.VarChar(255)
   description     String? @db.Text
   imageUrl        String? @db.VarChar(500) // Ảnh đại diện chung (dùng trong danh sách chọn giống)
-  defaultDuration Int?    // Số ngày dự kiến từ gieo đến nở hoa
+  defaultDuration Int? // Số ngày dự kiến từ gieo đến nở hoa
 
   /// Ảnh theo từng giai đoạn: { "SEED": "url", "SPROUT": "url", ... }
-  stageImages     Json?   // Map<PlantStatus, string>
-  
+  stageImages Json? // Map<PlantStatus, string>
+
   /// Thời lượng riêng cho từng giai đoạn, ghi đè defaultDuration
-  stageDurations  Json?   // Map<PlantStatus, number>
+  stageDurations Json? // Map<PlantStatus, number>
 
-  isActive        Boolean @default(true) // Phục vụ xóa mềm
+  isActive Boolean @default(true) // Phục vụ xóa mềm
 
-  realPlants      RealPlant[]
-  virtualPlants   VirtualPlant[]
+  realPlants    RealPlant[]
+  virtualPlants VirtualPlant[]
 
-  createdAt       DateTime @default(now()) @db.Timestamptz(3)
-  updatedAt       DateTime @updatedAt @db.Timestamptz(3)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
   @@map("FlowerType")
 }
 
 /// Loại cây dành riêng cho góc Vườn Yên (thư giãn)
 model ZenFlower {
-  id              String  @id @default(uuid()) @db.Uuid
-  name            String  @unique @db.VarChar(255)
-  imageUrl        String? @db.VarChar(500) // Ảnh duy nhất của cây
-  isActive        Boolean @default(true)
-  
-  createdAt       DateTime @default(now()) @db.Timestamptz(3)
-  updatedAt       DateTime @updatedAt @db.Timestamptz(3)
+  id       String  @id @default(uuid()) @db.Uuid
+  name     String  @unique @db.VarChar(255)
+  imageUrl String? @db.VarChar(500) // Ảnh duy nhất của cây
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
   @@map("ZenFlower")
 }
@@ -297,7 +296,7 @@ model RealPlant {
   plantedAt   DateTime?   @db.Date
   completedAt DateTime?   @db.Date
 
-  flowerTypeId String @db.Uuid
+  flowerTypeId String     @db.Uuid
   flowerType   FlowerType @relation(fields: [flowerTypeId], references: [id], onDelete: Restrict)
 
   gardenId String @db.Uuid
@@ -306,7 +305,7 @@ model RealPlant {
   // Mỗi cây thật chỉ gắn được với 1 cây ảo (MVP)
   virtualPlant VirtualPlant?
   updates      PlantUpdate[]
-  orders       Order[]       // Đơn hàng liên kết với cây thật này
+  orders       Order[] // Đơn hàng liên kết với cây thật này
 
   // Phản hồi từ user
   reactions PlantReaction[]
@@ -323,8 +322,8 @@ model RealPlant {
 
 /// Cảm xúc user thả cho cây thật
 model PlantReaction {
-  id          String  @id @default(uuid()) @db.Uuid
-  emoji       String  @db.VarChar(10) // ❤️ 🌸 😊 💪 🌿
+  id    String @id @default(uuid()) @db.Uuid
+  emoji String @db.VarChar(10) // ❤️ 🌸 😊 💪 🌿
 
   realPlantId String    @db.Uuid
   realPlant   RealPlant @relation(fields: [realPlantId], references: [id], onDelete: Cascade)
@@ -334,7 +333,7 @@ model PlantReaction {
 
   createdAt DateTime @default(now()) @db.Timestamptz(3)
 
-  @@unique([realPlantId, userId])          // Mỗi user chỉ react 1 lần / cây
+  @@unique([realPlantId, userId]) // Mỗi user chỉ react 1 lần / cây
   @@index([realPlantId])
   @@map("PlantReaction")
 }
@@ -358,22 +357,22 @@ model PlantComment {
 
 /// Cây ảo của user trong app, gắn 1-1 với cây thật
 model VirtualPlant {
-  id          String  @id @default(uuid()) @db.Uuid
-  nickname    String? @db.VarChar(100) // Tên cây do user đặt
+  id       String  @id @default(uuid()) @db.Uuid
+  nickname String? @db.VarChar(100) // Tên cây do user đặt
 
   status      PlantStatus @default(SEED)
-  growthPoint Int         @default(0)  // Giữ lại cho streak / thành tích
-  streakCount Int         @default(0)  // Chuỗi ngày chăm sóc liên tiếp
+  growthPoint Int         @default(0) // Giữ lại cho streak / thành tích
+  streakCount Int         @default(0) // Chuỗi ngày chăm sóc liên tiếp
 
   // ── Tài nguyên tích lũy (không reset theo ngày) ─────────────────────────
-  waterAmount      Int @default(0)
-  sunlightAmount   Int @default(0)
-  fertilizerAmount Int @default(0)
-  airAmount        Int @default(0)
-  loveAmount       Int @default(0)
-  dewAmount        Int @default(0)
+  waterAmount      Int       @default(0)
+  sunlightAmount   Int       @default(0)
+  fertilizerAmount Int       @default(0)
+  airAmount        Int       @default(0)
+  loveAmount       Int       @default(0)
+  dewAmount        Int       @default(0)
   lastCaredAt      DateTime? @db.Timestamptz(3) // Lần chăm sóc gần nhất
-  resourceUsage    Json?     // Lưu lịch sử chăm sóc: { "WATER": ["timestamp1", "timestamp2"], "SUNLIGHT": [...] }
+  resourceUsage    Json? // Lưu lịch sử chăm sóc: { "WATER": ["timestamp1", "timestamp2"], "SUNLIGHT": [...] }
 
   userId String @db.Uuid
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -407,7 +406,7 @@ model PlantUpdate {
 
   imageUrl   String      @db.VarChar(500)
   status     PlantStatus // Trạng thái cây tại thời điểm cập nhật
-  note       String?     @db.Text   // Mô tả chung
+  note       String?     @db.Text // Mô tả chung
   healthNote String?     @db.VarChar(500) // Ghi chú tình trạng sức khỏe cây
 
   createdAt DateTime @default(now()) @db.Timestamptz(3)
@@ -428,13 +427,13 @@ model MoodJournal {
   userId String @db.Uuid
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  mood       MoodType
-  note       String?  @db.Text   // Ghi chú cảm xúc
+  mood MoodType
+  note String?  @db.Text // Ghi chú cảm xúc
 
-  aiReply    String?  @db.Text   // Lời động viên AI sinh ra
-  aiMetadata Json?               // Metadata: model, tokens, latency…
+  aiReply    String? @db.Text // Lời động viên AI sinh ra
+  aiMetadata Json? // Metadata: model, tokens, latency…
 
-  createdAt  DateTime @default(now()) @db.Timestamptz(3)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
 
   @@index([userId, createdAt])
   @@map("MoodJournal")
@@ -451,11 +450,11 @@ model CareTask {
   isShareable Boolean      @default(false) // Cho phép chia sẻ lên cộng đồng
 
   // Mobile gameplay fields
-  rewardResource  PlantResourceType @default(WATER)       // Loại tài nguyên thưởng
-  rewardAmount    Int               @default(10)          // Số lượng tài nguyên thưởng
-  growthReward    Int               @default(5)           // Điểm phát triển thưởng
+  rewardResource  PlantResourceType @default(WATER) // Loại tài nguyên thưởng
+  rewardAmount    Int               @default(10) // Số lượng tài nguyên thưởng
+  growthReward    Int               @default(5) // Điểm phát triển thưởng
   verifyType      TaskVerifyType    @default(SELF_CONFIRM) // Cách xác nhận
-  durationSeconds Int?                                    // Thời gian đếm ngược (TIMER)
+  durationSeconds Int? // Thời gian đếm ngược (TIMER)
 
   // Hoạt ảnh nhân vật riêng cho từng task (upload lên Cloudinary)
   characterImageUrl String? @db.VarChar(500)
@@ -486,10 +485,10 @@ model CareTaskLog {
   taskDate    DateTime @db.Date
   completedAt DateTime @default(now()) @db.Timestamptz(3)
 
-  note               String?  @db.Text   // Ghi chú của user khi hoàn thành
-  photoUrl           String?  @db.VarChar(500) // Ảnh chụp hoàn thành task
-  cloudinaryPublicId String?  @db.VarChar(255) // Dùng để xóa ảnh khỏi Cloudinary nếu cần
-  sharedToCommunity  Boolean  @default(false)  // Đã chia sẻ lên cộng đồng
+  note               String? @db.Text // Ghi chú của user khi hoàn thành
+  photoUrl           String? @db.VarChar(500) // Ảnh chụp hoàn thành task
+  cloudinaryPublicId String? @db.VarChar(255) // Dùng để xóa ảnh khỏi Cloudinary nếu cần
+  sharedToCommunity  Boolean @default(false) // Đã chia sẻ lên cộng đồng
 
   communityPost CommunityPost? // 1 log có thể tạo 1 bài cộng đồng
 
@@ -506,10 +505,10 @@ model CareTaskLog {
 // ========================
 
 model CommunityPost {
-  id        String @id @default(uuid()) @db.Uuid
+  id String @id @default(uuid()) @db.Uuid
 
-  userId    String @db.Uuid
-  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   taskLogId String?      @unique @db.Uuid
   taskLog   CareTaskLog? @relation(fields: [taskLogId], references: [id], onDelete: SetNull)
@@ -534,16 +533,16 @@ model CommunityPost {
 }
 
 model CommunityReaction {
-  id        String @id @default(uuid()) @db.Uuid
+  id String @id @default(uuid()) @db.Uuid
 
-  postId String @db.Uuid
+  postId String        @db.Uuid
   post   CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
 
   userId String @db.Uuid
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   type      CommunityReactionType
-  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  createdAt DateTime              @default(now()) @db.Timestamptz(3)
 
   @@unique([postId, userId, type])
   @@index([postId])
@@ -552,16 +551,16 @@ model CommunityReaction {
 }
 
 model CommunityReport {
-  id         String @id @default(uuid()) @db.Uuid
+  id String @id @default(uuid()) @db.Uuid
 
-  postId     String @db.Uuid
-  post       CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId String        @db.Uuid
+  post   CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
 
   reporterId String @db.Uuid
   reporter   User   @relation("UserReports", fields: [reporterId], references: [id], onDelete: Cascade)
 
-  reason    String  @db.VarChar(255)
-  note      String? @db.Text
+  reason String  @db.VarChar(255)
+  note   String? @db.Text
 
   createdAt DateTime @default(now()) @db.Timestamptz(3)
 
@@ -576,9 +575,9 @@ model CommunityReport {
 
 /// Lưu FCM token theo từng thiết bị (hỗ trợ multi-device)
 model UserDevice {
-  id       String  @id @default(uuid()) @db.Uuid
-  userId   String  @db.Uuid
-  user     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(uuid()) @db.Uuid
+  userId String @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   fcmToken String  @unique @db.VarChar(500)
   platform String? @db.VarChar(50) // ios | android | web
@@ -592,9 +591,9 @@ model UserDevice {
 
 /// Thông báo trong app gửi tới từng user
 model Notification {
-  id     String  @id @default(uuid()) @db.Uuid
-  userId String  @db.Uuid
-  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(uuid()) @db.Uuid
+  userId String @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   title  String  @db.VarChar(255)
   body   String  @db.Text
@@ -614,33 +613,33 @@ model Notification {
 
 /// Bản nhạc cho tính năng Vườn Yên, lưu file trên Supabase Storage bucket calm-music
 model CalmMusicTrack {
-  id          String  @id @default(uuid()) @db.Uuid
+  id String @id @default(uuid()) @db.Uuid
 
   /// Tên hiển thị tiếng Việt trên mobile (vd. "Tiếng mưa rơi nhẹ")
-  titleVi     String  @db.VarChar(255)
+  titleVi String @db.VarChar(255)
 
   /// true = nhạc có lời | false = nhạc không lời (nhạc nền/instrumental)
-  hasLyrics   Boolean @default(false)
+  hasLyrics Boolean @default(false)
 
   /// Danh mục: rain | nature | piano | lofi | general ...
-  category    String  @default("general") @db.VarChar(100)
+  category String @default("general") @db.VarChar(100)
 
   /// Đường dẫn file trong Supabase Storage (vd. "rain/1717000000-mua_roi.mp3")
-  storagePath String  @unique @db.VarChar(500)
+  storagePath String @unique @db.VarChar(500)
 
   /// Public URL để stream trực tiếp
-  publicUrl   String  @db.VarChar(500)
+  publicUrl String @db.VarChar(500)
 
   /// Tên file gốc khi upload (để hiển thị thông tin)
   originalName String? @db.VarChar(255)
 
   /// true = nghe tự do không cần điểm; false = cần đổi điểm để mở khóa
-  isFree      Boolean @default(true)
+  isFree Boolean @default(true)
 
   /// Số điểm cần để mở khóa bài hát (chỉ áp dụng khi isFree = false)
-  pointCost   Int     @default(50)
+  pointCost Int @default(50)
 
-  isActive    Boolean @default(true)
+  isActive Boolean @default(true)
 
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
@@ -656,16 +655,16 @@ model CalmMusicTrack {
 
 /// Điểm tích lũy của user từ việc dùng tài nguyên chăm cây
 model UserPoints {
-  id          String  @id @default(uuid()) @db.Uuid
+  id String @id @default(uuid()) @db.Uuid
 
-  userId      String  @unique @db.Uuid
-  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @unique @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   /// Tổng điểm đã tích lũy từ trước tới nay
-  totalPoints Int     @default(0)
+  totalPoints Int @default(0)
 
   /// Tổng điểm đã tiêu (dùng để mở khóa nhạc)
-  spentPoints Int     @default(0)
+  spentPoints Int @default(0)
 
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
   createdAt DateTime @default(now()) @db.Timestamptz(3)
@@ -675,18 +674,18 @@ model UserPoints {
 
 /// Lịch sử bài hát user đã mở khóa bằng điểm
 model UserUnlockedTrack {
-  id          String  @id @default(uuid()) @db.Uuid
+  id String @id @default(uuid()) @db.Uuid
 
-  userId      String  @db.Uuid
-  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  trackId     String  @db.Uuid
-  track       CalmMusicTrack @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  trackId String         @db.Uuid
+  track   CalmMusicTrack @relation(fields: [trackId], references: [id], onDelete: Cascade)
 
   /// Số điểm đã dùng để mở khóa bài này
   pointsSpent Int
 
-  unlockedAt  DateTime @default(now()) @db.Timestamptz(3)
+  unlockedAt DateTime @default(now()) @db.Timestamptz(3)
 
   /// Mỗi user chỉ mở khóa 1 bài 1 lần
   @@unique([userId, trackId])
@@ -700,34 +699,34 @@ model UserUnlockedTrack {
 
 /// Bảng định nghĩa gói dịch vụ (Free / Mầm Ảo Plus / Hướng Dương...)
 model ServicePlan {
-  id          String    @id @default(uuid()) @db.Uuid
-  code        PlanCode  @unique
-  name        String    @db.VarChar(255)
-  description String?   @db.Text
-  type        PlanType
-  plantMode   PlantMode
-  price       Int       // Đơn vị: VNĐ
-  durationDays Int?     // Chỉ dùng cho SUBSCRIPTION (vd. 30 ngày)
+  id           String    @id @default(uuid()) @db.Uuid
+  code         PlanCode  @unique
+  name         String    @db.VarChar(255)
+  description  String?   @db.Text
+  type         PlanType
+  plantMode    PlantMode
+  price        Int // Đơn vị: VNĐ
+  durationDays Int? // Chỉ dùng cho SUBSCRIPTION (vd. 30 ngày)
 
   // Nhạc Góc Yên
   includedSongs  Int @default(0) // Số bài nhạc free khi đăng ký
   maxRedeemSongs Int @default(0) // Tổng số bài tối đa được đổi (kể cả free)
 
   // Tính năng nâng cao
-  hasAiJournalReply   Boolean @default(false)
-  hasMoodAnalytics    Boolean @default(false)
-  hasMoodTaskSuggest  Boolean @default(false)
+  hasAiJournalReply  Boolean @default(false)
+  hasMoodAnalytics   Boolean @default(false)
+  hasMoodTaskSuggest Boolean @default(false)
 
   // Tính năng cây thật
-  hasRealPlant        Boolean @default(false)
-  hasFarmerUpdates    Boolean @default(false)
-  updateIntervalDays  Int?    // Chu kỳ cập nhật ảnh từ nhà vườn (ngày)
-  includesShipping    Boolean @default(false)
+  hasRealPlant       Boolean @default(false)
+  hasFarmerUpdates   Boolean @default(false)
+  updateIntervalDays Int? // Chu kỳ cập nhật ảnh từ nhà vườn (ngày)
+  includesShipping   Boolean @default(false)
 
   // Tính năng quà tặng (Premium Gift)
-  hasPotCustom        Boolean @default(false)
-  hasGiftCard         Boolean @default(false)
-  hasGiftPackaging    Boolean @default(false)
+  hasPotCustom     Boolean @default(false)
+  hasGiftCard      Boolean @default(false)
+  hasGiftPackaging Boolean @default(false)
 
   isActive  Boolean @default(true)
   sortOrder Int     @default(0)
@@ -743,13 +742,13 @@ model ServicePlan {
 
 /// Subscription của user (dùng cho gói SUBSCRIPTION như Mầm Ảo Plus)
 model UserSubscription {
-  id     String @id @default(uuid()) @db.Uuid
+  id String @id @default(uuid()) @db.Uuid
 
   userId String @db.Uuid
   planId String @db.Uuid
 
-  startsAt  DateTime  @default(now()) @db.Timestamptz(3)
-  endsAt    DateTime? @db.Timestamptz(3)
+  startsAt DateTime  @default(now()) @db.Timestamptz(3)
+  endsAt   DateTime? @db.Timestamptz(3)
 
   isActive  Boolean @default(true)
   autoRenew Boolean @default(false)
@@ -805,9 +804,9 @@ model Order {
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
-  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  plan      ServicePlan  @relation(fields: [planId], references: [id])
-  realPlant RealPlant?   @relation(fields: [realPlantId], references: [id])
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan      ServicePlan @relation(fields: [planId], references: [id])
+  realPlant RealPlant?  @relation(fields: [realPlantId], references: [id])
 
   @@index([userId])
   @@index([planId])
@@ -822,10 +821,10 @@ model Order {
 
 /// Danh mục achievement
 enum AchievementCategory {
-  TREE_CARE  // Chăm sóc cây
-  WELLNESS   // Sức khỏe tinh thần (Vườn Yên)
-  JOURNAL    // Nhật ký cảm xúc
-  JOURNEY    // Hành trình đồng hành
+  TREE_CARE // Chăm sóc cây
+  WELLNESS // Sức khỏe tinh thần (Vườn Yên)
+  JOURNAL // Nhật ký cảm xúc
+  JOURNEY // Hành trình đồng hành
 }
 
 /// Định nghĩa thành tựu — do admin seed, không thay đổi runtime
@@ -838,7 +837,7 @@ model AchievementDefinition {
   category       AchievementCategory
   requirement    String              @db.VarChar(500) // Mô tả điều kiện ngắn
   progressKey    String              @db.VarChar(100) // vd: "carePlantCount"
-  targetProgress Int                                  // Ngưỡng mở khóa
+  targetProgress Int // Ngưỡng mở khóa
   sortOrder      Int                 @default(0)
   isActive       Boolean             @default(true)
 
@@ -862,9 +861,9 @@ model UserAchievement {
   achievementId String                @db.Uuid
   achievement   AchievementDefinition @relation(fields: [achievementId], references: [id], onDelete: Cascade)
 
-  progress    Int      @default(0)   // Tiến trình hiện tại
-  unlocked    Boolean  @default(false)
-  unlockedAt  DateTime? @db.Timestamptz(3)
+  progress   Int       @default(0) // Tiến trình hiện tại
+  unlocked   Boolean   @default(false)
+  unlockedAt DateTime? @db.Timestamptz(3)
 
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
@@ -874,4 +873,3 @@ model UserAchievement {
   @@index([userId, unlocked])
   @@map("UserAchievement")
 }
-

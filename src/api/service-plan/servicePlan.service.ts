@@ -371,7 +371,12 @@ export async function adminConfirmPayment(
       }
     }
 
-    return updatedOrder;
+    // 4. Lấy order mới nhất sau khi gán cây để trả về dữ liệu chính xác
+    const finalOrder = await tx.order.findUnique({
+      where: { id: orderId },
+      include: { plan: true },
+    });
+    return finalOrder!;
   });
 }
 

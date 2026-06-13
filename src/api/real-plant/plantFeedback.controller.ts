@@ -106,10 +106,19 @@ export const addComment = async (req: Request, res: Response, next: NextFunction
 
     const comment = await prisma.plantComment.create({
       data: { realPlantId, userId, content: content.trim() },
-      include: { user: { select: { id: true, name: true, avatarUrl: true } } },
+      include: { user: { select: { id: true, fullName: true, avatarUrl: true } } },
     });
 
-    return res.status(201).json({ message: "Đã gửi bình luận 💬", data: comment });
+    const formattedComment = {
+      ...comment,
+      user: {
+        id: comment.user.id,
+        name: comment.user.fullName ?? "Người dùng",
+        avatarUrl: comment.user.avatarUrl,
+      },
+    };
+
+    return res.status(201).json({ message: "Đã gửi bình luận 💬", data: formattedComment });
   } catch (err) { next(err); }
 };
 
@@ -124,7 +133,7 @@ export const getComments = async (req: Request, res: Response, next: NextFunctio
     const [comments, total] = await Promise.all([
       prisma.plantComment.findMany({
         where: { realPlantId },
-        include: { user: { select: { id: true, name: true, avatarUrl: true } } },
+        include: { user: { select: { id: true, fullName: true, avatarUrl: true } } },
         orderBy: { createdAt: "desc" },
         skip: (page - 1) * limit,
         take: limit,
@@ -132,8 +141,17 @@ export const getComments = async (req: Request, res: Response, next: NextFunctio
       prisma.plantComment.count({ where: { realPlantId } }),
     ]);
 
+    const formattedComments = comments.map((c) => ({
+      ...c,
+      user: {
+        id: c.user.id,
+        name: c.user.fullName ?? "Người dùng",
+        avatarUrl: c.user.avatarUrl,
+      },
+    }));
+
     return res.status(200).json({
-      data: comments,
+      data: formattedComments,
       meta: { total, page, limit, pages: Math.ceil(total / limit) },
     });
   } catch (err) { next(err); }
@@ -148,10 +166,19 @@ export const getFeedbackSummary = async (req: Request, res: Response, next: Next
       orderBy: { createdAt: "desc" },
       take: 20,
       include: {
-        user: { select: { id: true, name: true, avatarUrl: true } },
+        user: { select: { id: true, fullName: true, avatarUrl: true } },
         realPlant: { select: { id: true, code: true, garden: { select: { name: true } } } },
       },
     });
+
+    const formattedLatestComments = latestComments.map((c) => ({
+      ...c,
+      user: {
+        id: c.user.id,
+        name: c.user.fullName ?? "Người dùng",
+        avatarUrl: c.user.avatarUrl,
+      },
+    }));
 
     // Tổng reactions phân loại theo emoji
     const allReactions = await prisma.plantReaction.groupBy({
@@ -180,7 +207,7 @@ export const getFeedbackSummary = async (req: Request, res: Response, next: Next
 
     return res.status(200).json({
       data: {
-        latestComments,
+        latestComments: formattedLatestComments,
         reactionSummary: allReactions.map((r) => ({ emoji: r.emoji, count: r._count.emoji })),
         topReacted: topReactedWithDetail,
         totalComments: await prisma.plantComment.count(),

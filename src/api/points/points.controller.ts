@@ -57,7 +57,7 @@ export const getMyPoints = async (req: Request, res: Response) => {
 export const unlockTrackHandler = async (req: Request, res: Response) => {
   try {
     const userId = req.user!.id;
-    const { trackId } = req.params;
+    const trackId = req.params.trackId as string;
 
     const result = await unlockTrack(userId, trackId);
 

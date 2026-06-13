@@ -15,13 +15,22 @@ export const reactToPlant = async (req: Request, res: Response, next: NextFuncti
       return res.status(400).json({ message: `Emoji không hợp lệ. Chọn một trong: ${ALLOWED_EMOJIS.join(" ")}` });
     }
 
-    // Kiểm tra plant tồn tại và thuộc user (phải là cây ảo của user)
+    // Kiểm tra plant tồn tại
     const plant = await prisma.realPlant.findUnique({
       where: { id: realPlantId },
-      select: { id: true, virtualPlant: { select: { userId: true } } },
+      select: { id: true },
     });
     if (!plant) return res.status(404).json({ message: "Không tìm thấy cây" });
-    if (plant.virtualPlant?.userId !== userId) {
+
+    // Kiểm tra user có đơn hàng có cây này không
+    const userOrder = await prisma.order.findFirst({
+      where: {
+        userId,
+        realPlantId,
+        status: { in: ["PAID", "FULFILLING", "COMPLETED"] },
+      },
+    });
+    if (!userOrder) {
       return res.status(403).json({ message: "Bạn không có quyền react cho cây này" });
     }
 
@@ -94,13 +103,22 @@ export const addComment = async (req: Request, res: Response, next: NextFunction
       return res.status(400).json({ message: "Bình luận tối đa 500 ký tự" });
     }
 
-    // Kiểm tra plant thuộc user
+    // Kiểm tra plant tồn tại
     const plant = await prisma.realPlant.findUnique({
       where: { id: realPlantId },
-      select: { id: true, virtualPlant: { select: { userId: true } } },
+      select: { id: true },
     });
     if (!plant) return res.status(404).json({ message: "Không tìm thấy cây" });
-    if (plant.virtualPlant?.userId !== userId) {
+
+    // Kiểm tra user có đơn hàng gắn với cây này
+    const userOrder = await prisma.order.findFirst({
+      where: {
+        userId,
+        realPlantId,
+        status: { in: ["PAID", "FULFILLING", "COMPLETED"] },
+      },
+    });
+    if (!userOrder) {
       return res.status(403).json({ message: "Bạn không có quyền bình luận cho cây này" });
     }
 

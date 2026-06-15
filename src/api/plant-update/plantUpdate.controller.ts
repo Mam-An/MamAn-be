@@ -35,7 +35,11 @@ export const create = async (req: Request, res: Response, next: NextFunction) =>
         },
       },
     }).then(async (vPlant) => {
-      if (!vPlant?.user?.id) return;
+      console.log(`[Push] Cập nhật realPlantId: ${realPlantId} -> vPlant found:`, !!vPlant);
+      if (!vPlant?.user?.id) {
+        console.log(`[Push] Bỏ qua push vì không tìm thấy user hoặc virtualPlant.`);
+        return;
+      }
       
       const statusLabel: Record<string, string> = {
         SEED: 'Hạt giống', SPROUT: 'Nảy mầm 🌱', GROWING: 'Đang lớn 🌿',
@@ -58,10 +62,12 @@ export const create = async (req: Request, res: Response, next: NextFunction) =>
           type: 'plant_update',
         }
       });
+      console.log(`[Push] Đã lưu thông báo vào DB cho user: ${vPlant.user.id}`);
 
       // 2. Bắn Push Notification xuống máy điện thoại qua FCM
       const token = vPlant.user.expoPushToken; // Trường này giờ lưu FCM token
       if (token) {
+        console.log(`[Push] Tìm thấy FCM token, tiến hành gửi:`, token.substring(0, 20) + '...');
         const farmer = req.user as any;
         notifyPlantUpdateFcm({
           fcmToken: token,
@@ -71,6 +77,8 @@ export const create = async (req: Request, res: Response, next: NextFunction) =>
           note,
           farmerName: farmer?.fullName,
         }).catch((err) => console.error('[FCM] notifyPlantUpdateFcm error:', err));
+      } else {
+        console.log(`[Push] Không gửi FCM vì user không có expoPushToken (FCM Token) trong DB.`);
       }
     }).catch((err) => console.error('[Notify] Error saving notification:', err));
 

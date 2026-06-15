@@ -89,30 +89,53 @@ export const getUserRealPlants = async (req: Request, res: Response, next: NextF
   try {
     const userId = req.params.id;
     
-    // First, find if the user is a farmer
     const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user || user.role !== 'FARMER') {
+    if (!user) {
       return res.status(200).json({ metadata: { data: [] } });
     }
 
-    // A farmer might own gardens. We need to find gardens owned by this farmer.
-    const gardens = await prisma.garden.findMany({
-      where: { farmerId: userId },
-      select: { id: true }
-    });
-    
-    const gardenIds = gardens.map(g => g.id);
-    
-    if (gardenIds.length === 0) {
-      return res.status(200).json({ metadata: { data: [] } });
+    if (user.role === 'USER') {
+      // Người dùng bình thường: lấy cây thật thông qua cây ảo họ đang chăm sóc
+      const vps = await prisma.virtualPlant.findMany({
+        where: { userId },
+        select: { realPlantId: true }
+      });
+      const rpIds = vps.map(v => v.realPlantId).filter(Boolean);
+      
+      if (rpIds.length === 0) {
+        return res.status(200).json({ metadata: { data: [] } });
+      }
+
+      const plants = await prisma.realPlant.findMany({
+        where: { id: { in: rpIds } },
+        include: { flowerType: true, garden: true },
+        orderBy: { createdAt: "desc" },
+      });
+      return res.status(200).json({ metadata: { data: plants } });
     }
 
-    const plants = await prisma.realPlant.findMany({
-      where: { gardenId: { in: gardenIds } },
-      include: { flowerType: true, garden: true },
-      orderBy: { createdAt: "desc" },
-    });
-    return res.status(200).json({ metadata: { data: plants } });
+    if (user.role === 'FARMER') {
+      // Nhà vườn: lấy các cây thật nằm trong vườn mà họ quản lý
+      const gardens = await prisma.garden.findMany({
+        where: { farmerId: userId },
+        select: { id: true }
+      });
+      
+      const gardenIds = gardens.map(g => g.id);
+      
+      if (gardenIds.length === 0) {
+        return res.status(200).json({ metadata: { data: [] } });
+      }
+
+      const plants = await prisma.realPlant.findMany({
+        where: { gardenId: { in: gardenIds } },
+        include: { flowerType: true, garden: true },
+        orderBy: { createdAt: "desc" },
+      });
+      return res.status(200).json({ metadata: { data: plants } });
+    }
+
+    return res.status(200).json({ metadata: { data: [] } });
   } catch (error) {
     next(error);
   }

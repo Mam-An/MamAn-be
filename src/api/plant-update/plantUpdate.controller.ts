@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import prisma from "../../utils/prisma.js";
-import { notifyPlantUpdate } from "../../utils/expoPush.js";
+import { notifyPlantUpdateFcm } from "../../utils/fcmPush.js";
 
 // POST /api/plant-updates  [FARMER]
 export const create = async (req: Request, res: Response, next: NextFunction) => {
@@ -59,18 +59,18 @@ export const create = async (req: Request, res: Response, next: NextFunction) =>
         }
       });
 
-      // 2. Bắn Push Notification xuống máy điện thoại
-      const token = vPlant.user.expoPushToken;
+      // 2. Bắn Push Notification xuống máy điện thoại qua FCM
+      const token = vPlant.user.expoPushToken; // Trường này giờ lưu FCM token
       if (token) {
         const farmer = req.user as any;
-        notifyPlantUpdate({
-          expoPushToken: token,
+        notifyPlantUpdateFcm({
+          fcmToken: token,
           plantCode: vPlant.realPlant!.code,
           flowerName,
           status,
           note,
           farmerName: farmer?.fullName,
-        }).catch((err) => console.error('[Push] notifyPlantUpdate error:', err));
+        }).catch((err) => console.error('[FCM] notifyPlantUpdateFcm error:', err));
       }
     }).catch((err) => console.error('[Notify] Error saving notification:', err));
 

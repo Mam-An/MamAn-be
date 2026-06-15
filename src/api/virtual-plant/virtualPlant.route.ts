@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { authenticate, authorize } from "../../middlewares/auth.middleware.js";
 import { validateBody } from "../../middlewares/validate.middleware.js";
-import { start, getMy, getOne, getTimeline, updateNickname, carePlant } from "./virtualPlant.controller.js";
+import { start, getMy, getOne, getTimeline, updateNickname, carePlant, getAllAdmin } from "./virtualPlant.controller.js";
 import { startVirtualPlantSchema, updateNicknameSchema } from "./virtualPlant.schema.js";
 
 const router = Router();
@@ -38,6 +38,20 @@ const router = Router();
  *         description: Virtual plant started and assigned to a real plant
  */
 router.post("/start", authenticate, authorize("USER"), validateBody(startVirtualPlantSchema), start);
+
+/**
+ * @swagger
+ * /virtual-plants/all:
+ *   get:
+ *     summary: Get all virtual plants for admin
+ *     tags: [VirtualPlant]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of all virtual plants
+ */
+router.get("/all", authenticate, authorize("ADMIN"), getAllAdmin);
 
 /**
  * @swagger

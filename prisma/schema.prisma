@@ -381,8 +381,8 @@ model VirtualPlant {
   flowerType   FlowerType @relation(fields: [flowerTypeId], references: [id], onDelete: Restrict)
 
   // @unique: 1 cây thật chỉ thuộc về 1 cây ảo
-  realPlantId String    @unique @db.Uuid
-  realPlant   RealPlant @relation(fields: [realPlantId], references: [id], onDelete: Restrict)
+  realPlantId String?    @unique @db.Uuid
+  realPlant   RealPlant? @relation(fields: [realPlantId], references: [id], onDelete: Restrict)
 
   careTaskLogs CareTaskLog[]
 

@@ -10,30 +10,83 @@ export const start = async (req: Request, res: Response, next: NextFunction) => 
     const userId = req.user!.id;
     const { flowerTypeId, nickname } = req.body;
 
-    // Tìm cây thật chưa bị gắn với cây ảo nào
-    const availablePlant = await prisma.realPlant.findFirst({
-      where: {
-        flowerTypeId,
-        isAssigned: false,
-        status: "SEED",
-      },
+    // Check if user has real plant access via active subscriptions or paid orders
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        subscriptions: {
+          where: { isActive: true },
+          include: { plan: true }
+        },
+        orders: {
+          where: { status: "PAID", plan: { hasRealPlant: true } },
+          include: { plan: true }
+        }
+      }
     });
-    if (!availablePlant) {
-      return res.status(409).json({ message: "No available real plant for this flower type" });
+
+    let hasRealPlantAccess = false;
+    if (user) {
+      const hasSub = user.subscriptions.some(sub => sub.plan.hasRealPlant && (!sub.endsAt || sub.endsAt > new Date()));
+      const hasOrder = user.orders.length > 0;
+      hasRealPlantAccess = hasSub || hasOrder;
     }
 
-    const [virtualPlant] = await prisma.$transaction([
+    let realPlantId = null;
+    let transactions: any[] = [];
+
+    if (hasRealPlantAccess) {
+      // Tìm cây thật chưa bị gắn với cây ảo nào
+      const availablePlant = await prisma.realPlant.findFirst({
+        where: {
+          flowerTypeId,
+          isAssigned: false,
+          status: "SEED",
+        },
+      });
+      if (!availablePlant) {
+        return res.status(409).json({ message: "Tạm thời hết cây thật loại này tại vườn, vui lòng thử lại sau." });
+      }
+      realPlantId = availablePlant.id;
+      transactions.push(
+        prisma.realPlant.update({
+          where: { id: realPlantId },
+          data: { isAssigned: true },
+        })
+      );
+    }
+
+    // Tạo cây ảo (gắn realPlantId nếu có)
+    transactions.unshift(
       prisma.virtualPlant.create({
-        data: { userId, flowerTypeId, realPlantId: availablePlant.id, nickname },
+        data: { userId, flowerTypeId, realPlantId, nickname },
         include: { flowerType: true, realPlant: true },
-      }),
-      prisma.realPlant.update({
-        where: { id: availablePlant.id },
-        data: { isAssigned: true },
-      }),
-    ]);
+      })
+    );
+
+    const results = await prisma.$transaction(transactions);
+    const virtualPlant = results[0];
 
     return res.status(201).json({ message: "Virtual plant started", data: virtualPlant });
+  } catch (err) { next(err); }
+};
+
+// GET /api/virtual-plants/all  [ADMIN] — Lấy tất cả cây ảo
+export const getAllAdmin = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const plants = await prisma.virtualPlant.findMany({
+      include: {
+        flowerType: true,
+        realPlant: {
+          include: {
+            updates: { orderBy: { createdAt: "desc" }, take: 1 }
+          }
+        },
+        user: { select: { id: true, email: true, fullName: true } }
+      },
+      orderBy: { createdAt: "desc" },
+    });
+    return res.status(200).json({ data: plants });
   } catch (err) { next(err); }
 };
 
@@ -79,18 +132,41 @@ export const getOne = async (req: Request, res: Response, next: NextFunction) =>
 export const getTimeline = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.id;
+    const isAdmin = req.user!.role === 'ADMIN';
     const plant = await prisma.virtualPlant.findFirst({
-      where: { id: req.params.id as string, userId },
+      where: isAdmin ? { id: req.params.id as string } : { id: req.params.id as string, userId },
       select: { realPlantId: true },
     });
     if (!plant) return res.status(404).json({ message: "Virtual plant not found" });
 
-    const updates = await prisma.plantUpdate.findMany({
-      where: { realPlantId: plant.realPlantId },
-      include: { farmer: { select: { id: true, fullName: true } } },
-      orderBy: { createdAt: "desc" },
-    });
-    return res.status(200).json({ data: updates });
+    if (!plant.realPlantId) return res.status(200).json({ data: [] });
+
+    const [updates, reactions, comments] = await Promise.all([
+      prisma.plantUpdate.findMany({
+        where: { realPlantId: plant.realPlantId },
+        include: { farmer: { select: { id: true, fullName: true } } },
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.plantReaction.findMany({
+        where: { realPlantId: plant.realPlantId },
+        include: { user: { select: { fullName: true } } },
+      }),
+      prisma.plantComment.findMany({
+        where: { realPlantId: plant.realPlantId },
+        include: { user: { select: { fullName: true } } },
+      }),
+    ]);
+
+    // Merge everything into a unified timeline
+    const merged = [
+      ...updates.map((u) => ({ ...u, _type: 'UPDATE' })),
+      ...reactions.map((r) => ({ ...r, _type: 'REACTION' })),
+      ...comments.map((c) => ({ ...c, _type: 'COMMENT' })),
+    ];
+    // Sort ASCENDING so older events (Updates) appear before newer events (Reactions/Comments)
+    merged.sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+
+    return res.status(200).json({ data: merged });
   } catch (err) { next(err); }
 };
 

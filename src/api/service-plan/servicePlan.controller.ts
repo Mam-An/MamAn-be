@@ -175,6 +175,24 @@ export const adminGetPlans = async (_req: Request, res: Response) => {
   }
 };
 
+/** GET /api/v1/admin/users/:id/current-plan */
+export const adminGetUserCurrentPlan = async (req: Request, res: Response) => {
+  try {
+    const userId = req.params.id as string;
+    const { plan, subscription } = await getUserCurrentPlan(userId);
+    return res.json({
+      message: "Lấy gói hiện tại của người dùng thành công.",
+      metadata: {
+        plan,
+        subscriptionEndsAt: subscription?.endsAt ?? null,
+      },
+    });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    return res.status(500).json({ message });
+  }
+};
+
 /** POST /api/v1/admin/plans */
 export const adminCreatePlan = async (req: Request, res: Response) => {
   try {

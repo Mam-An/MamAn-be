@@ -11,7 +11,18 @@ export const getAll = async (req: Request, res: Response, next: NextFunction) =>
 
     const plants = await prisma.realPlant.findMany({
       where,
-      include: { flowerType: true, garden: { select: { id: true, name: true } } },
+      include: {
+        flowerType: true,
+        garden: { select: { id: true, name: true } },
+        updates: { orderBy: { createdAt: "desc" }, take: 1, select: { createdAt: true } },
+        virtualPlant: {
+          select: {
+            createdAt: true,
+            nickname: true,
+            user: { select: { id: true, fullName: true, email: true } },
+          },
+        },
+      },
       orderBy: { createdAt: "desc" },
     });
     return res.status(200).json({ data: plants });

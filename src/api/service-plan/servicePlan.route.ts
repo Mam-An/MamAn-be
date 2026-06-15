@@ -22,6 +22,7 @@ import {
   adminUpdateShippingStatusHandler,
   adminGetAvailableRealPlants,
   adminAssignRealPlantHandler,
+  adminGetUserCurrentPlan,
 } from "./servicePlan.controller.js";
 
 const router = Router();
@@ -58,6 +59,9 @@ router.patch("/orders/:id/shipping-info", authenticate, updateOrderShippingInfoH
 
 /** GET /api/v1/admin/plans — Danh sách tất cả gói (kể cả inactive) */
 router.get("/admin/plans", authenticate, authorize("ADMIN"), adminGetPlans);
+
+/** GET /api/v1/admin/users/:id/current-plan — Xem gói hiện tại của user */
+router.get("/admin/users/:id/current-plan", authenticate, authorize("ADMIN"), adminGetUserCurrentPlan);
 
 /** POST /api/v1/admin/plans — Tạo gói mới */
 router.post("/admin/plans", authenticate, authorize("ADMIN"), adminCreatePlan);

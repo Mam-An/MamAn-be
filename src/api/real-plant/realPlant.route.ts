@@ -5,7 +5,7 @@ import { getAll, getOne, create, update, batchCreate } from "./realPlant.control
 import { createRealPlantSchema, updateRealPlantSchema } from "./realPlant.schema.js";
 import {
   reactToPlant, getReactions,
-  addComment, getComments,
+  addComment, getComments, deleteComment,
   getFeedbackSummary,
 } from "./plantFeedback.controller.js";
 
@@ -179,5 +179,8 @@ router.post("/:id/comments", authenticate, addComment);
 
 // GET  /real-plants/:id/comments  [authenticated]
 router.get("/:id/comments", authenticate, getComments);
+
+// DELETE /real-plants/:id/comments/:commentId  [USER]
+router.delete("/:id/comments/:commentId", authenticate, deleteComment);
 
 export default router;

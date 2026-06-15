@@ -183,6 +183,30 @@ export const getComments = async (req: Request, res: Response, next: NextFunctio
   } catch (err) { next(err); }
 };
 
+// ── DELETE /real-plants/:id/comments/:commentId ────────────────────────────
+// User xóa bình luận của chính mình
+export const deleteComment = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.id;
+    const { commentId } = req.params;
+
+    const comment = await prisma.plantComment.findUnique({
+      where: { id: commentId },
+    });
+
+    if (!comment) return res.status(404).json({ message: "Không tìm thấy bình luận" });
+    if (comment.userId !== userId) {
+      return res.status(403).json({ message: "Bạn không có quyền xóa bình luận này" });
+    }
+
+    await prisma.plantComment.delete({
+      where: { id: commentId },
+    });
+
+    return res.status(200).json({ message: "Đã xóa bình luận" });
+  } catch (err) { next(err); }
+};
+
 // ── GET /real-plants/feedback-summary  [FARMER only] ───────────────────────
 // Tổng hợp toàn bộ reactions + comments mới nhất cho dashboard nhà vườn
 export const getFeedbackSummary = async (req: Request, res: Response, next: NextFunction) => {

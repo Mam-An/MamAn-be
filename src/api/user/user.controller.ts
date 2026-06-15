@@ -68,3 +68,66 @@ export const savePushToken = async (req: Request, res: Response, next: NextFunct
     next(error);
   }
 };
+
+// GET /api/users/:id/virtual-plants  [ADMIN]
+export const getUserVirtualPlants = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.params.id;
+    const plants = await prisma.virtualPlant.findMany({
+      where: { userId },
+      include: { flowerType: true, realPlant: true },
+      orderBy: { createdAt: "desc" },
+    });
+    return res.status(200).json({ metadata: { data: plants } });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// GET /api/users/:id/real-plants  [ADMIN]
+export const getUserRealPlants = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.params.id;
+    
+    // First, find if the user is a farmer
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user || user.role !== 'FARMER') {
+      return res.status(200).json({ metadata: { data: [] } });
+    }
+
+    // A farmer might own gardens. We need to find gardens owned by this farmer.
+    const gardens = await prisma.garden.findMany({
+      where: { farmerId: userId },
+      select: { id: true }
+    });
+    
+    const gardenIds = gardens.map(g => g.id);
+    
+    if (gardenIds.length === 0) {
+      return res.status(200).json({ metadata: { data: [] } });
+    }
+
+    const plants = await prisma.realPlant.findMany({
+      where: { gardenId: { in: gardenIds } },
+      include: { flowerType: true, garden: true },
+      orderBy: { createdAt: "desc" },
+    });
+    return res.status(200).json({ metadata: { data: plants } });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// GET /api/users/:id/mood-journals  [ADMIN]
+export const getUserMoodJournals = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.params.id;
+    const journals = await prisma.moodJournal.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+    });
+    return res.status(200).json({ metadata: { data: journals } });
+  } catch (error) {
+    next(error);
+  }
+};

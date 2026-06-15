@@ -18,26 +18,35 @@ async function getFirebaseAdmin() {
     admin = firebaseAdmin.default ?? firebaseAdmin;
 
     if (!admin.apps.length) {
-      // Lấy service account từ biến môi trường hoặc file JSON
-      const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
-      let credential;
-
-      if (serviceAccountJson) {
-        // Dùng biến môi trường (khuyến nghị cho production)
-        const serviceAccount = JSON.parse(serviceAccountJson);
-        credential = admin.credential.cert(serviceAccount);
-      } else {
-        // Fallback: dùng file JSON local (chỉ dùng cho dev)
+      // Ưu tiên 1: Lấy từng biến lẻ (Chuẩn nhất cho Vercel/Render)
+      if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
+        // Vercel thường bị dính lỗi chuỗi '\n' thành '\\n', nên cần replace lại cho đúng chuẩn PEM
+        const privateKey = process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n');
+        
+        admin.initializeApp({
+          credential: admin.credential.cert({
+            projectId: process.env.FIREBASE_PROJECT_ID,
+            clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+            privateKey: privateKey,
+          })
+        });
+      } 
+      // Ưu tiên 2: Lấy nguyên chuỗi JSON (như cũ)
+      else if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+        const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
+        admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+      } 
+      // Ưu tiên 3: File local (cho localhost)
+      else {
         try {
           const serviceAccount = require('./firebase-service-account.json');
-          credential = admin.credential.cert(serviceAccount);
+          admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
         } catch {
-          console.warn('[FCM] firebase-service-account.json không tìm thấy và FIREBASE_SERVICE_ACCOUNT_JSON chưa được set.');
+          console.warn('[FCM] Không tìm thấy Firebase Config nào hợp lệ.');
           return null;
         }
       }
 
-      admin.initializeApp({ credential });
       console.log('[FCM] Firebase Admin SDK khởi tạo thành công.');
     }
     messaging = admin.messaging();

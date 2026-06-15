@@ -59,4 +59,31 @@ router.patch("/:id/read", authenticate, markRead);
  */
 router.patch("/read-all", authenticate, markAllRead);
 
+/**
+ * @swagger
+ * /notifications/test-fcm:
+ *   post:
+ *     summary: Test sending an FCM push notification
+ *     tags: [Notification]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               token:
+ *                 type: string
+ *                 description: (Tùy chọn) FCM token. Nếu không truyền sẽ lấy từ tài khoản hiện tại.
+ *     responses:
+ *       200:
+ *         description: Lệnh push đã được thực thi
+ *       500:
+ *         description: Lỗi từ Firebase Admin (nếu sai config)
+ */
+import { testFcm } from "./notification.controller.js";
+router.post("/test-fcm", authenticate, testFcm);
+
 export default router;

@@ -48,10 +48,8 @@ export const create = async (req: Request, res: Response, next: NextFunction) =>
       };
       
       const flowerName = vPlant.realPlant?.flowerType?.name ?? 'Cây của bạn';
-      const title = `🌸 ${flowerName} của bạn có cập nhật mới!`;
-      const body = note
-        ? `Trạng thái: ${statusLabel[status] ?? status} — "${note}"`
-        : `Trạng thái mới: ${statusLabel[status] ?? status}`;
+      const title = `🌸 Tin vui từ Mầm An!`;
+      const body = `Bạn có 1 cập nhật mới từ nhà vườn cho cây ${flowerName} 🌱. Trạng thái: ${statusLabel[status] ?? status}${note ? ` — "${note}"` : ''}`;
         
       // 1. Lưu vào Database để hiển thị ở cái Chuông (Notification Center)
       await prisma.notification.create({

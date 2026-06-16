@@ -2,55 +2,56 @@
  * FCM Push Notification Service
  * Gửi push notification trực tiếp qua Firebase Cloud Messaging (FCM).
  * Yêu cầu: file service account key đặt ở `src/utils/firebase-service-account.json`
- * Download từ: Firebase Console → Project Settings → Service Accounts → Generate new private key
  */
 
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { getMessaging } from 'firebase-admin/messaging';
 import { createRequire } from 'module';
-const require = createRequire(import.meta.url);
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 
-let admin: any = null;
+const require = createRequire(import.meta.url);
 let messaging: any = null;
 
 async function getFirebaseAdmin() {
-  if (admin) return admin;
   try {
-    const firebaseAdmin = await import('firebase-admin');
-    admin = firebaseAdmin.default ?? firebaseAdmin;
-
-    if (!admin.apps.length) {
-      // Ưu tiên 1: Lấy từng biến lẻ (Chuẩn nhất cho Vercel/Render)
+    if (!getApps().length) {
+      // Ưu tiên 1: ENV riêng lẻ (chuẩn Vercel/Render)
       if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
-        // Vercel thường bị dính lỗi chuỗi '\n' thành '\\n', nên cần replace lại cho đúng chuẩn PEM
         const privateKey = process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n');
-        
-        admin.initializeApp({
-          credential: admin.credential.cert({
+
+        initializeApp({
+          credential: cert({
             projectId: process.env.FIREBASE_PROJECT_ID,
             clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-            privateKey: privateKey,
+            privateKey,
           })
         });
-      } 
-      // Ưu tiên 2: Lấy nguyên chuỗi JSON (như cũ)
+      }
+      // Ưu tiên 2: Chuỗi JSON nguyên
       else if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
         const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
-        admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
-      } 
-      // Ưu tiên 3: File local (cho localhost)
+        initializeApp({ credential: cert(serviceAccount) });
+      }
+      // Ưu tiên 3: File JSON local (localhost dev)
       else {
         try {
-          const serviceAccount = require('./firebase-service-account.json');
-          admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+          const __dirname = dirname(fileURLToPath(import.meta.url));
+          const serviceAccount = require(join(__dirname, 'firebase-service-account.json'));
+          initializeApp({ credential: cert(serviceAccount) });
         } catch {
           console.warn('[FCM] Không tìm thấy Firebase Config nào hợp lệ.');
           return null;
         }
       }
-
       console.log('[FCM] Firebase Admin SDK khởi tạo thành công.');
     }
-    messaging = admin.messaging();
-    return admin;
+    
+    // Khởi tạo instance messaging
+    if (!messaging) {
+      messaging = getMessaging();
+    }
+    return messaging;
   } catch (err) {
     console.error('[FCM] Không thể khởi tạo Firebase Admin:', err);
     return null;

@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { authenticate, authorize } from "../../middlewares/auth.middleware.js";
 import { validateBody } from "../../middlewares/validate.middleware.js";
-import { start, getMy, getOne, getTimeline, updateNickname, carePlant, getAllAdmin } from "./virtualPlant.controller.js";
+import { start, getMy, getOne, getTimeline, updateNickname, carePlant, getAllAdmin, harvestPlant } from "./virtualPlant.controller.js";
 import { startVirtualPlantSchema, updateNicknameSchema } from "./virtualPlant.schema.js";
 
 const router = Router();
@@ -172,5 +172,29 @@ router.patch("/:id", authenticate, validateBody(updateNicknameSchema), updateNic
  *         description: Not enough resource
  */
 router.post("/:id/care", authenticate, carePlant);
+
+/**
+ * @swagger
+ * /virtual-plants/{id}/harvest:
+ *   post:
+ *     summary: Harvest a blooming virtual plant — saves to flower garden
+ *     tags: [VirtualPlant]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Harvest successful, plant moved to RESTING
+ *       400:
+ *         description: Plant is not BLOOMING
+ *       404:
+ *         description: Plant not found
+ */
+router.post("/:id/harvest", authenticate, authorize("USER"), harvestPlant);
 
 export default router;

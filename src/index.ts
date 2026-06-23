@@ -1,6 +1,7 @@
 import "dotenv/config";
 import app from "./server.js";
 import prisma from "./utils/prisma.js";
+import { initNotificationScheduler } from "./api/notification/scheduler.service.js";
 
 const PORT = process.env.PORT || 3000;
 
@@ -15,6 +16,9 @@ async function startServer() {
       console.log(`Server is running on port ${PORT}`);
       console.log(`Swagger Docs available at http://localhost:${PORT}/api-docs`);
     });
+
+    // Khởi tạo Cron Job gửi thông báo
+    initNotificationScheduler();
 
     const shutdown = async () => {
       try {

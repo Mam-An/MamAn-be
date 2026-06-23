@@ -60,6 +60,18 @@ enum MoodType {
   TIRED // Mệt mỏi
 }
 
+enum ReminderType {
+  PLANT_REMINDER
+  JOURNAL_REMINDER
+  GARDEN_YEN_REMINDER
+}
+
+enum NotificationStatus {
+  SUCCESS
+  FAILED
+  PENDING
+}
+
 /// Trạng thái duyệt vườn
 enum GardenStatus {
   PENDING // Chờ admin duyệt
@@ -180,6 +192,7 @@ model User {
   role          UserRole @default(USER)
   isActive      Boolean  @default(true)
   expoPushToken String?  @db.VarChar(500) // Expo push token từ thiết bị mobile
+  lastActiveAt  DateTime @default(now()) @db.Timestamptz(3)
   createdAt     DateTime @default(now()) @db.Timestamptz(3)
   updatedAt     DateTime @updatedAt @db.Timestamptz(3)
 
@@ -198,6 +211,8 @@ model User {
   refreshTokens      RefreshToken[]
   devices            UserDevice[]
   notifications      Notification[]
+  notificationLogs   NotificationLog[]
+  notificationSetting UserNotificationSetting?
 
   // SERVICE PLANS
   subscriptions UserSubscription[]
@@ -209,6 +224,9 @@ model User {
 
   // ACHIEVEMENTS
   userAchievements UserAchievement[]
+
+  // FLOWER HARVEST
+  flowerHarvests   FlowerHarvest[]
 
   // PLANT FEEDBACK
   plantReactions PlantReaction[]
@@ -264,8 +282,9 @@ model FlowerType {
 
   isActive Boolean @default(true) // Phục vụ xóa mềm
 
-  realPlants    RealPlant[]
-  virtualPlants VirtualPlant[]
+  realPlants     RealPlant[]
+  virtualPlants  VirtualPlant[]
+  flowerHarvests FlowerHarvest[]
 
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
@@ -384,7 +403,8 @@ model VirtualPlant {
   realPlantId String?    @unique @db.Uuid
   realPlant   RealPlant? @relation(fields: [realPlantId], references: [id], onDelete: Restrict)
 
-  careTaskLogs CareTaskLog[]
+  careTaskLogs    CareTaskLog[]
+  flowerHarvests  FlowerHarvest[]
 
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
@@ -605,6 +625,43 @@ model Notification {
   @@index([userId, isRead])
   @@index([createdAt])
   @@map("Notification")
+}
+
+/// Lịch sử gửi Push Notification
+model NotificationLog {
+  id     String @id @default(uuid()) @db.Uuid
+  userId String @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type   ReminderType
+  title  String       @db.VarChar(255)
+  body   String       @db.Text
+  status NotificationStatus @default(PENDING)
+  error  String?      @db.Text
+
+  sentAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([userId])
+  @@index([type])
+  @@map("NotificationLog")
+}
+
+/// Cài đặt thông báo của user
+model UserNotificationSetting {
+  id     String @id @default(uuid()) @db.Uuid
+  userId String @unique @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  enablePlantReminder     Boolean @default(true)
+  enableJournalReminder   Boolean @default(true)
+  enableGardenYenReminder Boolean @default(true)
+
+  reminderTime String @default("21:00") // Giờ nhắc nhở mặc định (VD: 21:00)
+
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@map("UserNotificationSetting")
 }
 
 // ========================
@@ -872,4 +929,44 @@ model UserAchievement {
   @@index([userId])
   @@index([userId, unlocked])
   @@map("UserAchievement")
+}
+
+// ========================
+// VƯỜN HOA — THU HOẠCH
+// ========================
+
+/// Lịch sử thu hoạch hoa — khi cây ảo đạt trạng thái BLOOMING và user chủ động thu hoạch
+model FlowerHarvest {
+  id String @id @default(uuid()) @db.Uuid
+
+  /// User thực hiện thu hoạch
+  userId String @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// Cây ảo được thu hoạch
+  virtualPlantId String       @db.Uuid
+  virtualPlant   VirtualPlant @relation(fields: [virtualPlantId], references: [id], onDelete: Cascade)
+
+  /// Loại hoa (denormalize để query nhanh mà không join)
+  flowerTypeId   String     @db.Uuid
+  flowerType     FlowerType @relation(fields: [flowerTypeId], references: [id], onDelete: Restrict)
+
+  /// Tên hoa tại thời điểm thu hoạch (snapshot phòng rename)
+  flowerName     String  @db.VarChar(255)
+
+  /// Ảnh hoa tại thời điểm thu hoạch
+  flowerImageUrl String? @db.VarChar(500)
+
+  /// Tên cây do user đặt
+  nickname       String? @db.VarChar(100)
+
+  /// Số ngày từ khi trồng (createdAt của VirtualPlant) đến khi thu hoạch
+  growthDays     Int     @default(0)
+
+  harvestedAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([userId])
+  @@index([userId, flowerTypeId]) // Group by species query
+  @@index([harvestedAt])
+  @@map("FlowerHarvest")
 }

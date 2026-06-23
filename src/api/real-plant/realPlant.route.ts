@@ -74,6 +74,9 @@ router.get("/", authenticate, authorize("ADMIN", "FARMER"), getAll);
  */
 router.post("/batch", authenticate, authorize("ADMIN", "FARMER"), batchCreate);
 
+// GET /real-plants/feedback-summary  [FARMER | ADMIN]
+router.get("/feedback-summary", authenticate, authorize("ADMIN", "FARMER"), getFeedbackSummary);
+
 /**
  * @swagger
  * /real-plants/{id}:
@@ -164,9 +167,6 @@ router.post("/", authenticate, authorize("ADMIN", "FARMER"), validateBody(create
 router.put("/:id", authenticate, authorize("ADMIN", "FARMER"), validateBody(updateRealPlantSchema), update);
 
 // ── Feedback routes (user: react + comment; farmer: summary) ─────────────
-
-// GET /real-plants/feedback-summary  [FARMER | ADMIN]
-router.get("/feedback-summary", authenticate, authorize("ADMIN", "FARMER"), getFeedbackSummary);
 
 // POST /real-plants/:id/react  [USER]
 router.post("/:id/react", authenticate, reactToPlant);

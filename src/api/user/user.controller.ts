@@ -154,3 +154,94 @@ export const getUserMoodJournals = async (req: Request, res: Response, next: Nex
     next(error);
   }
 };
+
+// ── GET /api/users/me/flower-garden ─────────────────────────────────────────
+// Trả về bộ sưu tập vườn hoa của user: tổng thu hoạch, số loài, danh sách loài.
+export const getMyFlowerGarden = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.id;
+
+    // Lấy toàn bộ harvest records của user, sắp xếp mới nhất trước
+    const harvests = await prisma.flowerHarvest.findMany({
+      where: { userId },
+      orderBy: { harvestedAt: "desc" },
+      select: {
+        id: true,
+        flowerTypeId: true,
+        flowerName: true,
+        flowerImageUrl: true,
+        nickname: true,
+        growthDays: true,
+        harvestedAt: true,
+        virtualPlantId: true,
+      },
+    });
+
+    // Group by flowerTypeId để tạo danh sách loài
+    const speciesMap = new Map<
+      string,
+      {
+        flowerTypeId: string;
+        flowerName: string;
+        flowerImageUrl: string | null;
+        harvestCount: number;
+        firstHarvestedAt: Date;
+        latestHarvestedAt: Date;
+      }
+    >();
+
+    for (const h of harvests) {
+      const existing = speciesMap.get(h.flowerTypeId);
+      const harvestedAt = new Date(h.harvestedAt);
+
+      if (existing) {
+        existing.harvestCount += 1;
+        if (harvestedAt < existing.firstHarvestedAt) {
+          existing.firstHarvestedAt = harvestedAt;
+        }
+        if (harvestedAt > existing.latestHarvestedAt) {
+          existing.latestHarvestedAt = harvestedAt;
+        }
+      } else {
+        speciesMap.set(h.flowerTypeId, {
+          flowerTypeId: h.flowerTypeId,
+          flowerName: h.flowerName,
+          flowerImageUrl: h.flowerImageUrl,
+          harvestCount: 1,
+          firstHarvestedAt: harvestedAt,
+          latestHarvestedAt: harvestedAt,
+        });
+      }
+    }
+
+    // Sắp xếp loài theo số lần thu hoạch giảm dần
+    const species = Array.from(speciesMap.values())
+      .sort((a, b) => b.harvestCount - a.harvestCount)
+      .map((s) => ({
+        ...s,
+        firstHarvestedAt: s.firstHarvestedAt.toISOString(),
+        latestHarvestedAt: s.latestHarvestedAt.toISOString(),
+      }));
+
+    // 10 lần thu hoạch gần nhất
+    const recentHarvests = harvests.slice(0, 10).map((h) => ({
+      id: h.id,
+      plantId: h.virtualPlantId,
+      flowerTypeId: h.flowerTypeId,
+      flowerName: h.flowerName,
+      flowerImageUrl: h.flowerImageUrl,
+      nickname: h.nickname,
+      growthDays: h.growthDays,
+      harvestedAt: h.harvestedAt,
+    }));
+
+    return res.status(200).json({
+      totalHarvested: harvests.length,
+      uniqueSpeciesCount: species.length,
+      species,
+      recentHarvests,
+    });
+  } catch (error) {
+    next(error);
+  }
+};

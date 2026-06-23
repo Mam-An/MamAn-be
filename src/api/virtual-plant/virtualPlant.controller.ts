@@ -268,6 +268,7 @@ export const carePlant = async (req: Request, res: Response, next: NextFunction)
       where: { id: plant.id },
       data: {
         [fieldName]: { decrement: amount },
+        growthPoint: { increment: amount },
         resourceUsage: newResourceUsage,
         lastCaredAt: now,
       },
@@ -279,9 +280,74 @@ export const carePlant = async (req: Request, res: Response, next: NextFunction)
     // Refresh achievement progress (background)
     refreshUserAchievements(userId).catch(() => {});
 
-    // Lấy lời cảm ơn từ AI (có thể tốn vài giây)
-    const aiMessage = await generateCareThankYou(resourceType as string, plant.nickname || undefined);
+    return res.status(200).json({ message: "Care action applied", data: updatedPlant });
+  } catch (err) { next(err); }
+};
 
-    return res.status(200).json({ message: "Care action applied", data: updatedPlant, aiMessage });
+// ── POST /api/virtual-plants/:id/harvest ────────────────────────────────────
+// User thu hoạch cây khi cây đang ở trạng thái BLOOMING.
+// Ghi FlowerHarvest, chuyển cây sang RESTING, refresh achievement.
+export const harvestPlant = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.id;
+    const plantId = req.params.id as string;
+
+    // Tìm cây ảo của user, include loại hoa
+    const plant = await prisma.virtualPlant.findFirst({
+      where: { id: plantId, userId },
+      include: { flowerType: true },
+    });
+
+    if (!plant) {
+      return res.status(404).json({ message: "Không tìm thấy cây." });
+    }
+
+    if (plant.status !== "BLOOMING") {
+      return res.status(400).json({
+        message: "Chỉ có thể thu hoạch khi cây đang nở hoa (trạng thái BLOOMING).",
+      });
+    }
+
+    // Tính số ngày từ khi trồng
+    const growthDays = Math.floor(
+      (Date.now() - new Date(plant.createdAt).getTime()) / (1000 * 60 * 60 * 24),
+    );
+
+    // Transaction: tạo harvest record + cập nhật trạng thái cây
+    const [harvest] = await prisma.$transaction([
+      prisma.flowerHarvest.create({
+        data: {
+          userId,
+          virtualPlantId: plant.id,
+          flowerTypeId: plant.flowerTypeId,
+          flowerName: plant.flowerType.name,
+          flowerImageUrl: plant.flowerType.imageUrl ?? null,
+          nickname: plant.nickname ?? null,
+          growthDays,
+        },
+      }),
+      prisma.virtualPlant.update({
+        where: { id: plant.id },
+        data: { status: "RESTING" },
+      }),
+    ]);
+
+    // Refresh achievement (background — không block response)
+    refreshUserAchievements(userId).catch(() => {});
+
+    return res.status(200).json({
+      success: true,
+      message: "🌸 Thu hoạch thành công!",
+      harvest: {
+        id: harvest.id,
+        plantId: plant.id,
+        flowerTypeId: harvest.flowerTypeId,
+        flowerName: harvest.flowerName,
+        flowerImageUrl: harvest.flowerImageUrl,
+        harvestedAt: harvest.harvestedAt,
+        nickname: harvest.nickname,
+        growthDays: harvest.growthDays,
+      },
+    });
   } catch (err) { next(err); }
 };

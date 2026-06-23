@@ -59,6 +59,7 @@ export const getPosts = async (req: Request, res: Response, next: NextFunction) 
         avatarUrl: post.visibility === "PUBLIC" ? post.user.avatarUrl : null,
         reactionCounts,
         myReactions,
+        isMine: currentUserId === post.userId,
       };
     });
 
@@ -116,6 +117,7 @@ export const getPostById = async (req: Request, res: Response, next: NextFunctio
         avatarUrl: post.visibility === "PUBLIC" ? post.user.avatarUrl : null,
         reactionCounts,
         myReactions,
+        isMine: currentUserId === post.userId,
       },
     });
   } catch (err) { next(err); }

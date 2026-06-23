@@ -83,7 +83,33 @@ router.patch("/read-all", authenticate, markAllRead);
  *       500:
  *         description: Lỗi từ Firebase Admin (nếu sai config)
  */
-import { testFcm } from "./notification.controller.js";
+import { testFcm, registerFcmToken } from "./notification.controller.js";
+
+/**
+ * @swagger
+ * /notifications/register-token:
+ *   post:
+ *     summary: Register FCM token for push notifications
+ *     tags: [Notification]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               token:
+ *                 type: string
+ *               platform:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Token registered
+ */
+router.post("/register-token", authenticate, registerFcmToken);
+
 router.post("/test-fcm", authenticate, testFcm);
 
 export default router;

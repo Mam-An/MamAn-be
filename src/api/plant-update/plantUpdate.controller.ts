@@ -97,7 +97,7 @@ export const getByRealPlant = async (req: Request, res: Response, next: NextFunc
   } catch (err) { next(err); }
 };
 
-// GET /api/plant-updates/all  [ADMIN]
+// GET /api/plant-updates/all  [ADMIN | FARMER]
 export const getAll = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { gardenId } = req.query;
@@ -107,12 +107,21 @@ export const getAll = async (req: Request, res: Response, next: NextFunction) =>
     if (gardenId) {
       whereClause.realPlant = { gardenId: String(gardenId) };
     }
+    if (req.user?.role === "FARMER") {
+      whereClause.farmerId = req.user.id;
+    }
 
     const updates = await prisma.plantUpdate.findMany({
       where: whereClause,
       include: {
         farmer: { select: { id: true, fullName: true } },
-        realPlant: { select: { id: true, code: true } }
+        realPlant: { 
+          select: { 
+            id: true, 
+            code: true,
+            flowerType: { select: { name: true } }
+          } 
+        }
       },
       orderBy: { createdAt: "desc" },
     });

@@ -255,7 +255,6 @@ export const completeTask = async (req: Request, res: Response, next: NextFuncti
         where: { id: virtualPlantId },
         data: {
           ...resourceUpdate,
-          growthPoint: { increment: careTask.growthReward },
           lastCaredAt: new Date(),
           streakCount: yesterdayLog ? { increment: 1 } : 1,
         },

@@ -17,7 +17,7 @@ const router = Router();
  * @swagger
  * /plant-updates/all:
  *   get:
- *     summary: Get all plant updates (Admin only)
+ *     summary: Get all plant updates (Admin and Farmer)
  *     tags: [PlantUpdate]
  *     security:
  *       - bearerAuth: []
@@ -30,7 +30,7 @@ const router = Router();
  *       200:
  *         description: List of all updates
  */
-router.get("/all", authenticate, authorize("ADMIN"), getAll);
+router.get("/all", authenticate, authorize("ADMIN", "FARMER"), getAll);
 
 /**
  * @swagger

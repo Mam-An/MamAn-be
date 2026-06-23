@@ -41,6 +41,40 @@ export const markAllRead = async (req: Request, res: Response, next: NextFunctio
 
 import { sendFcmNotification } from "../../utils/fcmPush.js";
 
+// POST /api/notifications/register-token
+export const registerFcmToken = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.id;
+    const { token, platform } = req.body;
+
+    if (!token) return res.status(400).json({ message: "Token is required" });
+
+    // Cập nhật UserDevice
+    const existing = await prisma.userDevice.findUnique({ where: { fcmToken: token } });
+    
+    if (existing) {
+      if (existing.userId !== userId) {
+        await prisma.userDevice.update({
+          where: { id: existing.id },
+          data: { userId, platform }
+        });
+      }
+    } else {
+      await prisma.userDevice.create({
+        data: { userId, fcmToken: token, platform }
+      });
+    }
+
+    // Cập nhật lastActiveAt
+    await prisma.user.update({
+      where: { id: userId },
+      data: { lastActiveAt: new Date() }
+    });
+
+    return res.status(200).json({ message: "Token registered successfully" });
+  } catch (err) { next(err); }
+};
+
 // POST /api/notifications/test-fcm
 export const testFcm = async (req: Request, res: Response, next: NextFunction) => {
   try {

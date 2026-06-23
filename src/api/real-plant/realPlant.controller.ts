@@ -38,7 +38,21 @@ export const getOne = async (req: Request, res: Response, next: NextFunction) =>
         flowerType: true,
         garden: true,
         updates: { orderBy: { createdAt: "desc" }, take: 10 },
-        virtualPlant: { select: { id: true, nickname: true, userId: true } },
+        virtualPlant: { 
+          select: { 
+            id: true, 
+            nickname: true, 
+            userId: true,
+            user: { select: { id: true, fullName: true, avatarUrl: true } }
+          } 
+        },
+        comments: {
+          include: { user: { select: { id: true, fullName: true, avatarUrl: true } } },
+          orderBy: { createdAt: "desc" }
+        },
+        reactions: {
+          select: { emoji: true, userId: true }
+        }
       },
     });
     if (!plant) return res.status(404).json({ message: "RealPlant not found" });

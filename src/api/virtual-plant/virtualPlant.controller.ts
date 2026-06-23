@@ -90,10 +90,17 @@ export const start = async (req: Request, res: Response, next: NextFunction) => 
       );
     }
 
+    // Kế thừa điểm tích lũy từ cây cũ (để không bị reset điểm khi trồng cây mới)
+    const lastPlant = await prisma.virtualPlant.findFirst({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+    });
+    const carryOverPoints = lastPlant?.growthPoint ?? 0;
+
     // Tạo cây ảo (gắn realPlantId nếu có)
     transactions.unshift(
       prisma.virtualPlant.create({
-        data: { userId, flowerTypeId, realPlantId, nickname },
+        data: { userId, flowerTypeId, realPlantId, nickname, growthPoint: carryOverPoints },
         include: { flowerType: true, realPlant: true },
       })
     );

@@ -4,6 +4,40 @@ import { generateCareThankYou } from "../mood-journal/aiJournal.service.js";
 import { addPointsFromTask } from "../points/points.service.js";
 import { refreshUserAchievements } from "../achievement/achievement.service.js";
 
+// ── Tính stage từ ngày trồng (mirror logic frontend) ────────────────────────
+// Dùng để tự động cập nhật plant.status vào DB mỗi khi user chăm cây.
+type PlantStatusType = "SEED" | "SPROUT" | "GROWING" | "BUDDING" | "BLOOMING" | "RESTING";
+
+const STAGE_ORDER: PlantStatusType[] = ["SEED", "SPROUT", "GROWING", "BUDDING", "BLOOMING"];
+const STAGE_RATIOS: Record<PlantStatusType, number> = {
+  SEED: 0.10, SPROUT: 0.20, GROWING: 0.35, BUDDING: 0.25, BLOOMING: 0.10, RESTING: 0,
+};
+const DEFAULT_TOTAL_DAYS = 30;
+
+function computeStatusFromDate(
+  createdAt: Date,
+  stageDurations?: Record<string, number> | null,
+  defaultDuration?: number | null,
+): PlantStatusType {
+  const total = defaultDuration ?? DEFAULT_TOTAL_DAYS;
+  const durations = stageDurations ?? {
+    SEED:     Math.round(total * STAGE_RATIOS.SEED),
+    SPROUT:   Math.round(total * STAGE_RATIOS.SPROUT),
+    GROWING:  Math.round(total * STAGE_RATIOS.GROWING),
+    BUDDING:  Math.round(total * STAGE_RATIOS.BUDDING),
+    BLOOMING: Math.round(total * STAGE_RATIOS.BLOOMING),
+  };
+
+  const daysAlive = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24);
+  let cumDays = 0;
+  for (const stage of STAGE_ORDER) {
+    cumDays += (durations[stage] as number) ?? 0;
+    if (daysAlive < cumDays) return stage;
+  }
+  return "BLOOMING";
+}
+
+
 // POST /api/virtual-plants/start  — user chọn hoa, BE tìm cây thật còn trống rồi tạo cây ảo
 export const start = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -100,12 +134,30 @@ export const getMy = async (req: Request, res: Response, next: NextFunction) => 
         flowerType: true,
         realPlant: {
           include: {
-            updates: { orderBy: { createdAt: "desc" }, take: 1 }, // ảnh mới nhất
+            updates: { orderBy: { createdAt: "desc" }, take: 1 },
           },
         },
       },
       orderBy: { createdAt: "desc" },
     });
+
+    // ── Tự động sync status vào DB nếu cây đã lên giai đoạn mới ──
+    for (const plant of plants) {
+      if (plant.status === "RESTING") continue; // đã thu hoạch, không tính lại
+      const correctStatus = computeStatusFromDate(
+        plant.createdAt,
+        plant.flowerType?.stageDurations as Record<string, number> | null,
+        (plant.flowerType as any)?.defaultDuration,
+      );
+      if (correctStatus !== plant.status) {
+        await prisma.virtualPlant.update({
+          where: { id: plant.id },
+          data: { status: correctStatus },
+        });
+        (plant as any).status = correctStatus; // cập nhật object trả về
+      }
+    }
+
     return res.status(200).json({ data: plants });
   } catch (err) { next(err); }
 };
@@ -273,6 +325,26 @@ export const carePlant = async (req: Request, res: Response, next: NextFunction)
         lastCaredAt: now,
       },
     });
+
+    // ── Tự động nâng status nếu cây đã đủ ngày ──
+    const plantWithFlower = await prisma.virtualPlant.findUnique({
+      where: { id: plant.id },
+      include: { flowerType: true },
+    });
+    if (plantWithFlower && plantWithFlower.status !== "RESTING") {
+      const correctStatus = computeStatusFromDate(
+        plantWithFlower.createdAt,
+        plantWithFlower.flowerType?.stageDurations as Record<string, number> | null,
+        (plantWithFlower.flowerType as any)?.defaultDuration,
+      );
+      if (correctStatus !== plantWithFlower.status) {
+        await prisma.virtualPlant.update({
+          where: { id: plant.id },
+          data: { status: correctStatus },
+        });
+        (updatedPlant as any).status = correctStatus;
+      }
+    }
 
     // Cộng điểm tích lũy cho user khi dùng tài nguyên chăm cây
     await addPointsFromTask(userId, resourceType as string, amount);

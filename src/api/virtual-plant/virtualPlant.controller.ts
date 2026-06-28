@@ -67,6 +67,7 @@ export const start = async (req: Request, res: Response, next: NextFunction) => 
     }
 
     let realPlantId = null;
+    let plantMode: "REAL" | "FREE" = "FREE";
     let transactions: any[] = [];
 
     if (hasRealPlantAccess) {
@@ -78,16 +79,20 @@ export const start = async (req: Request, res: Response, next: NextFunction) => 
           status: "SEED",
         },
       });
-      if (!availablePlant) {
-        return res.status(409).json({ message: "Tạm thời hết cây thật loại này tại vườn, vui lòng thử lại sau." });
+
+      if (availablePlant) {
+        // Còn cây thật → dùng cây thật
+        realPlantId = availablePlant.id;
+        plantMode = "REAL";
+        transactions.push(
+          prisma.realPlant.update({
+            where: { id: realPlantId },
+            data: { isAssigned: true },
+          })
+        );
       }
-      realPlantId = availablePlant.id;
-      transactions.push(
-        prisma.realPlant.update({
-          where: { id: realPlantId },
-          data: { isAssigned: true },
-        })
-      );
+      // Nếu không còn cây thật (đã dùng hết gói) → tự động fallback về FREE
+      // realPlantId vẫn là null, plantMode = "FREE"
     }
 
     // Kế thừa điểm tích lũy từ cây cũ (để không bị reset điểm khi trồng cây mới)
@@ -108,7 +113,11 @@ export const start = async (req: Request, res: Response, next: NextFunction) => 
     const results = await prisma.$transaction(transactions);
     const virtualPlant = results[0];
 
-    return res.status(201).json({ message: "Virtual plant started", data: virtualPlant });
+    return res.status(201).json({
+      message: "Virtual plant started",
+      data: virtualPlant,
+      plantMode,  // "REAL" | "FREE" — để frontend hiển thị thông báo phù hợp
+    });
   } catch (err) { next(err); }
 };
 

@@ -1,6 +1,10 @@
-import swaggerJsdoc from "swagger-jsdoc";
-import swaggerUi from "swagger-ui-express";
-import type { Express } from "express";
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import swaggerJsdoc from 'swagger-jsdoc';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const options = {
   definition: {
@@ -11,6 +15,10 @@ const options = {
       description: "API documentation for Garden BE (Mental Health Support through Virtual/Real Plants)",
     },
     servers: [
+      {
+        url: "https://garden-be.vercel.app/api/v1",
+        description: "Production Server",
+      },
       {
         url: "http://localhost:3000/api/v1",
         description: "Local Server",
@@ -36,15 +44,7 @@ const options = {
 
 const swaggerSpec = swaggerJsdoc(options);
 
-export const setupSwagger = (app: Express) => {
-  const CSS_URL = "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui.min.css";
-  const customJs = [
-    "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui-bundle.js",
-    "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui-standalone-preset.js",
-  ];
-
-  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
-    customCssUrl: CSS_URL,
-    customJs: customJs,
-  }));
-};
+const outputPath = path.join(__dirname, '..', 'src', 'swagger-spec.ts');
+const fileContent = `// Auto-generated file. Do not edit manually.\nexport const swaggerSpec = ${JSON.stringify(swaggerSpec, null, 2)};\n`;
+fs.writeFileSync(outputPath, fileContent);
+console.log('Generated src/swagger-spec.ts successfully');

@@ -1,0 +1,2211 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Garden BE API",
+    "version": "1.0.0",
+    "description": "API documentation for Garden BE (Mental Health Support through Virtual/Real Plants)"
+  },
+  "servers": [
+    {
+      "url": "https://garden-be.vercel.app/api/v1",
+      "description": "Production Server"
+    },
+    {
+      "url": "http://localhost:3000/api/v1",
+      "description": "Local Server"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/auth/register": {
+      "post": {
+        "summary": "Register a new user",
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email",
+                  "password"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string"
+                  },
+                  "password": {
+                    "type": "string"
+                  },
+                  "fullName": {
+                    "type": "string"
+                  },
+                  "avatarUrl": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Registered successfully"
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "summary": "Login a user",
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email",
+                  "password"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string"
+                  },
+                  "password": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful"
+          }
+        }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "summary": "Get current logged in user",
+        "tags": [
+          "Auth"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current user info"
+          }
+        }
+      }
+    },
+    "/auth/update-profile": {
+      "patch": {
+        "summary": "Update profile details",
+        "tags": [
+          "Auth"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "fullName": {
+                    "type": "string"
+                  },
+                  "avatarUrl": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Profile updated"
+          }
+        }
+      }
+    },
+    "/auth/update-password": {
+      "patch": {
+        "summary": "Update account password",
+        "tags": [
+          "Auth"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "currentPassword",
+                  "newPassword"
+                ],
+                "properties": {
+                  "currentPassword": {
+                    "type": "string"
+                  },
+                  "newPassword": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Password updated"
+          }
+        }
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "summary": "Refresh access token via cookie",
+        "tags": [
+          "Auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "Token refreshed successfully"
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "summary": "Logout user",
+        "tags": [
+          "Auth"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Logged out"
+          }
+        }
+      }
+    },
+    "/calm-music/upload": {
+      "post": {
+        "summary": "Upload bản nhạc mới lên bucket calm-music (chỉ ADMIN)",
+        "tags": [
+          "CalmMusic"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "audio",
+                  "titleVi"
+                ],
+                "properties": {
+                  "audio": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "File âm thanh (MP3, WAV, OGG, FLAC, AAC – tối đa 20MB)"
+                  },
+                  "titleVi": {
+                    "type": "string",
+                    "example": "Tiếng mưa rơi nhẹ",
+                    "description": "Tên tiếng Việt hiển thị trên mobile"
+                  },
+                  "hasLyrics": {
+                    "type": "boolean",
+                    "default": false,
+                    "example": false,
+                    "description": "true = có lời, false = không lời (nhạc nền)"
+                  },
+                  "category": {
+                    "type": "string",
+                    "example": "rain",
+                    "description": "Danh mục (rain | nature | piano | lofi | general)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Upload thành công, trả về record đầy đủ"
+          },
+          "400": {
+            "description": "Không có file hoặc sai định dạng"
+          },
+          "403": {
+            "description": "Không có quyền (chỉ ADMIN)"
+          }
+        }
+      }
+    },
+    "/calm-music/upload-url": {
+      "post": {
+        "summary": "Lấy signed URL để upload trực tiếp từ client lên Supabase",
+        "tags": [
+          "CalmMusic"
+        ]
+      }
+    },
+    "/calm-music/track": {
+      "post": {
+        "summary": "Lưu metadata bản nhạc sau khi client đã upload file thành công",
+        "tags": [
+          "CalmMusic"
+        ]
+      }
+    },
+    "/calm-music": {
+      "get": {
+        "summary": "Lấy danh sách bản nhạc (có thể lọc theo danh mục hoặc có lời/không lời)",
+        "tags": [
+          "CalmMusic"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "category",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "rain",
+                "nature",
+                "piano",
+                "lofi",
+                "general"
+              ]
+            },
+            "description": "Lọc theo danh mục"
+          },
+          {
+            "in": "query",
+            "name": "hasLyrics",
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "true = chỉ nhạc có lời | false = chỉ nhạc không lời | bỏ trống = tất cả"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Danh sách bản nhạc kèm metadata đầy đủ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "total": {
+                      "type": "integer"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "titleVi": {
+                            "type": "string",
+                            "example": "Tiếng mưa rơi nhẹ"
+                          },
+                          "hasLyrics": {
+                            "type": "boolean"
+                          },
+                          "category": {
+                            "type": "string"
+                          },
+                          "publicUrl": {
+                            "type": "string"
+                          },
+                          "storagePath": {
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/calm-music/{id}": {
+      "get": {
+        "summary": "Lấy chi tiết một bản nhạc",
+        "tags": [
+          "CalmMusic"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Chi tiết bản nhạc"
+          },
+          "404": {
+            "description": "Không tìm thấy"
+          }
+        }
+      },
+      "patch": {
+        "summary": "Cập nhật metadata bản nhạc (tên tiếng Việt, phân loại, danh mục...)",
+        "tags": [
+          "CalmMusic"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "titleVi": {
+                    "type": "string",
+                    "example": "Tiếng mưa rơi nhẹ (cập nhật)"
+                  },
+                  "hasLyrics": {
+                    "type": "boolean"
+                  },
+                  "category": {
+                    "type": "string"
+                  },
+                  "isActive": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Cập nhật thành công"
+          },
+          "403": {
+            "description": "Không có quyền"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Xóa bản nhạc khỏi Storage và DB (chỉ ADMIN)",
+        "tags": [
+          "CalmMusic"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Xóa thành công"
+          },
+          "404": {
+            "description": "Không tìm thấy"
+          }
+        }
+      }
+    },
+    "/calm-music/{id}/signed-url": {
+      "get": {
+        "summary": "Lấy signed URL tạm thời để stream nhạc (dùng khi bucket private)",
+        "tags": [
+          "CalmMusic"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "expires",
+            "schema": {
+              "type": "integer",
+              "default": 3600
+            },
+            "description": "Thời gian hết hạn (giây), mặc định 1 giờ"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Signed URL hợp lệ"
+          },
+          "404": {
+            "description": "Không tìm thấy bản nhạc"
+          }
+        }
+      }
+    },
+    "/care-tasks/logs": {
+      "post": {
+        "summary": "Hoàn thành một nhiệm vụ (hỗ trợ upload ảnh)",
+        "tags": [
+          "CareTask"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "careTaskId"
+                ],
+                "properties": {
+                  "careTaskId": {
+                    "type": "string"
+                  },
+                  "virtualPlantId": {
+                    "type": "string"
+                  },
+                  "note": {
+                    "type": "string"
+                  },
+                  "shareToCommunity": {
+                    "type": "boolean"
+                  },
+                  "visibility": {
+                    "type": "string",
+                    "enum": [
+                      "PUBLIC",
+                      "ANONYMOUS"
+                    ]
+                  },
+                  "photo": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Ảnh hoàn thành task (JPEG/PNG/WebP, max 5MB). Bắt buộc nếu task.verifyType = PHOTO_REQUIRED."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Task logged, trả về taskLog + updatedPlant + communityPost (nếu có)"
+          },
+          "400": {
+            "description": "Task cần ảnh nhưng không có ảnh, hoặc file không hợp lệ"
+          },
+          "409": {
+            "description": "Đã hoàn thành task này hôm nay rồi"
+          }
+        }
+      }
+    },
+    "/care-tasks/logs/my": {
+      "get": {
+        "summary": "Lịch sử hoàn thành task của user",
+        "tags": [
+          "CareTask"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          },
+          {
+            "in": "query",
+            "name": "fromDate",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "in": "query",
+            "name": "toDate",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Danh sách task logs"
+          }
+        }
+      }
+    },
+    "/flower-types": {
+      "get": {
+        "summary": "Get all flower types",
+        "tags": [
+          "FlowerType"
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of flower types"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a flower type (ADMIN only)",
+        "tags": [
+          "FlowerType"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "imageUrl": {
+                    "type": "string"
+                  },
+                  "defaultDuration": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "FlowerType created"
+          }
+        }
+      }
+    },
+    "/flower-types/{id}": {
+      "get": {
+        "summary": "Get a flower type by ID",
+        "tags": [
+          "FlowerType"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Flower type data"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update a flower type (ADMIN only)",
+        "tags": [
+          "FlowerType"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "imageUrl": {
+                    "type": "string"
+                  },
+                  "defaultDuration": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "FlowerType updated"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete a flower type (ADMIN only)",
+        "tags": [
+          "FlowerType"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "FlowerType deleted"
+          }
+        }
+      }
+    },
+    "/gardens": {
+      "get": {
+        "summary": "Get gardens (Admin sees all, Farmer sees own)",
+        "tags": [
+          "Garden"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PENDING",
+                "APPROVED",
+                "REJECTED"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of gardens"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new garden. Farmer → PENDING, Admin → APPROVED immediately.",
+        "tags": [
+          "Garden"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "address": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "imageUrl": {
+                    "type": "string"
+                  },
+                  "farmerId": {
+                    "type": "string",
+                    "description": "Admin only – assign to a specific farmer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created successfully"
+          }
+        }
+      }
+    },
+    "/gardens/{id}/plant-summary": {
+      "get": {
+        "summary": "Get plant type summary for a garden (grouped by flower type with counts)",
+        "tags": [
+          "Garden"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Plant summary grouped by flower type"
+          }
+        }
+      }
+    },
+    "/gardens/{id}": {
+      "get": {
+        "summary": "Get garden by ID",
+        "tags": [
+          "Garden"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Garden details"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update a garden (ADMIN, FARMER)",
+        "tags": [
+          "Garden"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "address": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "imageUrl": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated successfully"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Deactivate a garden (ADMIN)",
+        "tags": [
+          "Garden"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Garden deactivated"
+          }
+        }
+      }
+    },
+    "/gardens/{id}/approve": {
+      "patch": {
+        "summary": "Approve a garden request (ADMIN)",
+        "tags": [
+          "Garden"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Garden approved"
+          }
+        }
+      }
+    },
+    "/gardens/{id}/reject": {
+      "patch": {
+        "summary": "Reject a garden request (ADMIN)",
+        "tags": [
+          "Garden"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Garden rejected"
+          }
+        }
+      }
+    },
+    "/mood-journals": {
+      "post": {
+        "summary": "Create a mood journal entry with AI encouragement",
+        "tags": [
+          "MoodJournal"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "mood"
+                ],
+                "properties": {
+                  "mood": {
+                    "type": "string",
+                    "enum": [
+                      "HAPPY",
+                      "CALM",
+                      "NORMAL",
+                      "SAD",
+                      "ANXIOUS",
+                      "TIRED"
+                    ]
+                  },
+                  "note": {
+                    "type": "string",
+                    "maxLength": 2000
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created successfully with AI reply"
+          }
+        }
+      }
+    },
+    "/mood-journals/my": {
+      "get": {
+        "summary": "Get user's mood journals with pagination & filters",
+        "tags": [
+          "MoodJournal"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          },
+          {
+            "in": "query",
+            "name": "mood",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "HAPPY",
+                "CALM",
+                "NORMAL",
+                "SAD",
+                "ANXIOUS",
+                "TIRED"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "fromDate",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "in": "query",
+            "name": "toDate",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated mood journals"
+          }
+        }
+      }
+    },
+    "/mood-journals/{id}": {
+      "get": {
+        "summary": "Get a single mood journal entry",
+        "tags": [
+          "MoodJournal"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Journal entry detail"
+          },
+          "404": {
+            "description": "Not found or not owned by user"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete a mood journal entry",
+        "tags": [
+          "MoodJournal"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted successfully"
+          },
+          "404": {
+            "description": "Not found or not owned by user"
+          }
+        }
+      }
+    },
+    "/notifications/my": {
+      "get": {
+        "summary": "Get notifications for current user",
+        "tags": [
+          "Notification"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of notifications (newest first)"
+          }
+        }
+      }
+    },
+    "/notifications/{id}/read": {
+      "patch": {
+        "summary": "Mark a notification as read",
+        "tags": [
+          "Notification"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Marked as read"
+          }
+        }
+      }
+    },
+    "/notifications/read-all": {
+      "patch": {
+        "summary": "Mark all notifications as read",
+        "tags": [
+          "Notification"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "All marked as read"
+          }
+        }
+      }
+    },
+    "/notifications/test-fcm": {
+      "post": {
+        "summary": "Test sending an FCM push notification",
+        "tags": [
+          "Notification"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "token": {
+                    "type": "string",
+                    "description": "(Tùy chọn) FCM token. Nếu không truyền sẽ lấy từ tài khoản hiện tại."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Lệnh push đã được thực thi"
+          },
+          "500": {
+            "description": "Lỗi từ Firebase Admin (nếu sai config)"
+          }
+        }
+      }
+    },
+    "/notifications/register-token": {
+      "post": {
+        "summary": "Register FCM token for push notifications",
+        "tags": [
+          "Notification"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "token": {
+                    "type": "string"
+                  },
+                  "platform": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Token registered"
+          }
+        }
+      }
+    },
+    "/plant-updates/all": {
+      "get": {
+        "summary": "Get all plant updates (Admin and Farmer)",
+        "tags": [
+          "PlantUpdate"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "gardenId",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of all updates"
+          }
+        }
+      }
+    },
+    "/plant-updates": {
+      "post": {
+        "summary": "Create an update for a real plant",
+        "tags": [
+          "PlantUpdate"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "realPlantId",
+                  "imageUrl",
+                  "status"
+                ],
+                "properties": {
+                  "realPlantId": {
+                    "type": "string"
+                  },
+                  "imageUrl": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string"
+                  },
+                  "note": {
+                    "type": "string"
+                  },
+                  "healthNote": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Plant update created"
+          }
+        }
+      }
+    },
+    "/plant-updates/{realPlantId}": {
+      "get": {
+        "summary": "Get all updates for a real plant",
+        "tags": [
+          "PlantUpdate"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "realPlantId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of updates"
+          }
+        }
+      }
+    },
+    "/plant-updates/{id}": {
+      "delete": {
+        "summary": "Delete a plant update (ADMIN)",
+        "tags": [
+          "PlantUpdate"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted"
+          }
+        }
+      }
+    },
+    "/points/me": {
+      "get": {
+        "summary": "Xem điểm tích lũy, lịch sử unlock, và giới hạn gói hiện tại",
+        "tags": [
+          "Points"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thông tin điểm của user"
+          }
+        }
+      }
+    },
+    "/points/unlocked-tracks": {
+      "get": {
+        "summary": "Lấy danh sách ID bài hát đã mở khóa của user",
+        "tags": [
+          "Points"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mảng các trackId đã unlock"
+          }
+        }
+      }
+    },
+    "/points/unlock/{trackId}": {
+      "post": {
+        "summary": "Mở khóa một bài hát bằng điểm tích lũy",
+        "tags": [
+          "Points"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "trackId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mở khóa thành công"
+          },
+          "400": {
+            "description": "Không đủ điểm hoặc vượt giới hạn gói"
+          },
+          "404": {
+            "description": "Không tìm thấy bài hát"
+          },
+          "409": {
+            "description": "Đã mở khóa rồi"
+          }
+        }
+      }
+    },
+    "/real-plants": {
+      "get": {
+        "summary": "Get all real plants",
+        "tags": [
+          "RealPlant"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "gardenId",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of real plants"
+          }
+        }
+      },
+      "post": {
+        "summary": "Register a single real plant",
+        "tags": [
+          "RealPlant"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "code",
+                  "flowerTypeId",
+                  "gardenId"
+                ],
+                "properties": {
+                  "code": {
+                    "type": "string"
+                  },
+                  "flowerTypeId": {
+                    "type": "string"
+                  },
+                  "gardenId": {
+                    "type": "string"
+                  },
+                  "plantedAt": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "status": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "RealPlant created"
+          }
+        }
+      }
+    },
+    "/real-plants/batch": {
+      "post": {
+        "summary": "Batch create real plants of the same type into a garden",
+        "tags": [
+          "RealPlant"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "flowerTypeId",
+                  "gardenId",
+                  "quantity"
+                ],
+                "properties": {
+                  "flowerTypeId": {
+                    "type": "string"
+                  },
+                  "gardenId": {
+                    "type": "string"
+                  },
+                  "quantity": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100
+                  },
+                  "plantedAt": {
+                    "type": "string",
+                    "format": "date"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Plants created"
+          }
+        }
+      }
+    },
+    "/real-plants/{id}": {
+      "get": {
+        "summary": "Get a real plant by ID",
+        "tags": [
+          "RealPlant"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Real plant data"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update a real plant",
+        "tags": [
+          "RealPlant"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "flowerTypeId": {
+                    "type": "string"
+                  },
+                  "gardenId": {
+                    "type": "string"
+                  },
+                  "plantedAt": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "status": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "RealPlant updated"
+          }
+        }
+      }
+    },
+    "/upload": {
+      "post": {
+        "summary": "Upload a general image to Cloudinary",
+        "tags": [
+          "Upload"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "image"
+                ],
+                "properties": {
+                  "image": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Image uploaded successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "url": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/me/flower-garden": {
+      "get": {
+        "summary": "Get the current user's flower garden (harvest collection)",
+        "tags": [
+          "User"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Flower garden data with species list and harvest stats"
+          }
+        }
+      }
+    },
+    "/virtual-plants/start": {
+      "post": {
+        "summary": "User starts a new virtual plant",
+        "tags": [
+          "VirtualPlant"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "flowerTypeId"
+                ],
+                "properties": {
+                  "flowerTypeId": {
+                    "type": "string"
+                  },
+                  "nickname": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Virtual plant started and assigned to a real plant"
+          }
+        }
+      }
+    },
+    "/virtual-plants/all": {
+      "get": {
+        "summary": "Get all virtual plants for admin",
+        "tags": [
+          "VirtualPlant"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of all virtual plants"
+          }
+        }
+      }
+    },
+    "/virtual-plants/my": {
+      "get": {
+        "summary": "Get all virtual plants of the current user",
+        "tags": [
+          "VirtualPlant"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of virtual plants"
+          }
+        }
+      }
+    },
+    "/virtual-plants/{id}": {
+      "get": {
+        "summary": "Get virtual plant by ID",
+        "tags": [
+          "VirtualPlant"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Virtual plant details"
+          }
+        }
+      },
+      "patch": {
+        "summary": "Update virtual plant nickname",
+        "tags": [
+          "VirtualPlant"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "nickname"
+                ],
+                "properties": {
+                  "nickname": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Nickname updated"
+          }
+        }
+      }
+    },
+    "/virtual-plants/{id}/timeline": {
+      "get": {
+        "summary": "Get update timeline of the real plant linked to this virtual plant",
+        "tags": [
+          "VirtualPlant"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Timeline events"
+          }
+        }
+      }
+    },
+    "/virtual-plants/{id}/care": {
+      "post": {
+        "summary": "Spend resources to care for virtual plant",
+        "tags": [
+          "VirtualPlant"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "resourceType"
+                ],
+                "properties": {
+                  "resourceType": {
+                    "type": "string",
+                    "example": "WATER"
+                  },
+                  "amount": {
+                    "type": "integer",
+                    "example": 5
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Care action applied"
+          },
+          "400": {
+            "description": "Not enough resource"
+          }
+        }
+      }
+    },
+    "/virtual-plants/{id}/harvest": {
+      "post": {
+        "summary": "Harvest a blooming virtual plant — saves to flower garden",
+        "tags": [
+          "VirtualPlant"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Harvest successful, plant moved to RESTING"
+          },
+          "400": {
+            "description": "Plant is not BLOOMING"
+          },
+          "404": {
+            "description": "Plant not found"
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Auth",
+      "description": "Authentication endpoints"
+    },
+    {
+      "name": "CalmMusic",
+      "description": "API quản lý bản nhạc thư giãn cho tính năng Vườn Yên"
+    },
+    {
+      "name": "CareTask",
+      "description": "Micro care tasks and logs"
+    },
+    {
+      "name": "Community",
+      "description": "Vườn chung — chia sẻ khoảnh khắc tích cực"
+    },
+    {
+      "name": "FlowerType",
+      "description": "Flower types management"
+    },
+    {
+      "name": "Garden",
+      "description": "Garden management APIs"
+    },
+    {
+      "name": "MoodJournal",
+      "description": "Mood journaling APIs for users (icon-based emotions)"
+    },
+    {
+      "name": "Notification",
+      "description": "In-app notification APIs"
+    },
+    {
+      "name": "PlantUpdate",
+      "description": "Real plant updates by Farmers"
+    },
+    {
+      "name": "Points",
+      "description": "Hệ thống điểm tích lũy và mở khóa nhạc Vườn Yên"
+    },
+    {
+      "name": "RealPlant",
+      "description": "Real plant tracking APIs"
+    },
+    {
+      "name": "VirtualPlant",
+      "description": "Virtual plant APIs for users"
+    }
+  ]
+}

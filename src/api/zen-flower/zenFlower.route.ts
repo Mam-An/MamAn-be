@@ -8,7 +8,7 @@ const router = Router();
  * @swagger
  * tags:
  *   name: ZenFlower
- *   description: Zen Flower management endpoints
+ *   description: Quản lý danh mục Hoa Thiền (vật phẩm thư giãn/phần thưởng ảo trong app)
  */
 
 /**

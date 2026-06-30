@@ -27,70 +27,424 @@ import {
 
 const router = Router();
 
+/**
+ * @swagger
+ * tags:
+ *   name: ServicePlan
+ *   description: Service Plan and Order management endpoints
+ */
+
 // ── PUBLIC ────────────────────────────────────────────────────────────────────
 
-/** GET /api/v1/plans — Danh sách gói dịch vụ đang active */
+/**
+ * @swagger
+ * /plans:
+ *   get:
+ *     summary: Get active service plans
+ *     tags: [ServicePlan]
+ *     responses:
+ *       200:
+ *         description: List of active plans
+ */
 router.get("/plans", getActivePlans);
 
 // ── USER (Auth Required) ──────────────────────────────────────────────────────
 
-/** GET /api/v1/plans/my-current — Gói hiện tại + subscription info */
+/**
+ * @swagger
+ * /plans/my-current:
+ *   get:
+ *     summary: Get my current service plan
+ *     tags: [ServicePlan]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Current user plan details
+ */
 router.get("/plans/my-current", authenticate, getMyCurrentPlan);
 
-/** GET /api/v1/me/entitlements — Tổng hợp quyền tính năng của user */
+/**
+ * @swagger
+ * /me/entitlements:
+ *   get:
+ *     summary: Get my feature entitlements
+ *     tags: [ServicePlan]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Entitlements summary
+ */
 router.get("/me/entitlements", authenticate, getMyEntitlements);
 
-/** POST /api/v1/orders — Tạo đơn hàng cây thật */
+/**
+ * @swagger
+ * /orders:
+ *   post:
+ *     summary: Create a new order for a real plant
+ *     tags: [ServicePlan]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               planId:
+ *                 type: string
+ *               shippingAddress:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Order created
+ */
 router.post("/orders", authenticate, createOrderHandler);
 
-/** GET /api/v1/orders/my — Lịch sử đơn hàng của user */
+/**
+ * @swagger
+ * /orders/my:
+ *   get:
+ *     summary: Get my orders history
+ *     tags: [ServicePlan]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of user orders
+ */
 router.get("/orders/my", authenticate, getMyOrders);
 
-/** GET /api/v1/orders/:id — Chi tiết đơn hàng (user chỉ xem của mình, admin thấy tất cả) */
+/**
+ * @swagger
+ * /orders/{id}:
+ *   get:
+ *     summary: Get order details by ID
+ *     tags: [ServicePlan]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Order details
+ */
 router.get("/orders/:id", authenticate, getOrderByIdHandler);
 
-/** POST /api/v1/subscriptions/virtual-plus — Tạo đơn đăng ký Mầm Ảo Plus */
+/**
+ * @swagger
+ * /subscriptions/virtual-plus:
+ *   post:
+ *     summary: Subscribe to Virtual Plus
+ *     tags: [ServicePlan]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       201:
+ *         description: Subscribed successfully
+ */
 router.post("/subscriptions/virtual-plus", authenticate, subscribeVirtualPlus);
 
-/** PATCH /api/v1/orders/:id/shipping-info — Sửa địa chỉ nhận hàng của user */
+/**
+ * @swagger
+ * /orders/{id}/shipping-info:
+ *   patch:
+ *     summary: Update order shipping info
+ *     tags: [ServicePlan]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               shippingAddress:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Shipping info updated
+ */
 router.patch("/orders/:id/shipping-info", authenticate, updateOrderShippingInfoHandler);
 
 // ── ADMIN ─────────────────────────────────────────────────────────────────────
 
-/** GET /api/v1/admin/plans — Danh sách tất cả gói (kể cả inactive) */
+/**
+ * @swagger
+ * /admin/plans:
+ *   get:
+ *     summary: (Admin) Get all plans
+ *     tags: [ServicePlan]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of all plans
+ */
 router.get("/admin/plans", authenticate, authorize("ADMIN"), adminGetPlans);
 
-/** GET /api/v1/admin/users/:id/current-plan — Xem gói hiện tại của user */
+/**
+ * @swagger
+ * /admin/users/{id}/current-plan:
+ *   get:
+ *     summary: (Admin) Get user's current plan
+ *     tags: [ServicePlan]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: User's plan details
+ */
 router.get("/admin/users/:id/current-plan", authenticate, authorize("ADMIN"), adminGetUserCurrentPlan);
 
-/** POST /api/v1/admin/plans — Tạo gói mới */
+/**
+ * @swagger
+ * /admin/plans:
+ *   post:
+ *     summary: (Admin) Create a new plan
+ *     tags: [ServicePlan]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               price:
+ *                 type: number
+ *     responses:
+ *       201:
+ *         description: Plan created
+ */
 router.post("/admin/plans", authenticate, authorize("ADMIN"), adminCreatePlan);
 
-/** PATCH /api/v1/admin/plans/:id — Cập nhật thông tin gói */
+/**
+ * @swagger
+ * /admin/plans/{id}:
+ *   patch:
+ *     summary: (Admin) Update a plan
+ *     tags: [ServicePlan]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               price:
+ *                 type: number
+ *     responses:
+ *       200:
+ *         description: Plan updated
+ */
 router.patch("/admin/plans/:id", authenticate, authorize("ADMIN"), adminUpdatePlan);
 
-/** PATCH /api/v1/admin/plans/:id/toggle-active — Bật/tắt gói */
+/**
+ * @swagger
+ * /admin/plans/{id}/toggle-active:
+ *   patch:
+ *     summary: (Admin) Toggle plan active status
+ *     tags: [ServicePlan]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Plan active status toggled
+ */
 router.patch("/admin/plans/:id/toggle-active", authenticate, authorize("ADMIN"), adminTogglePlanActive);
 
-/** GET /api/v1/admin/orders — Danh sách đơn hàng với filter */
+/**
+ * @swagger
+ * /admin/orders:
+ *   get:
+ *     summary: (Admin) Get all orders
+ *     tags: [ServicePlan]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of all orders
+ */
 router.get("/admin/orders", authenticate, authorize("ADMIN"), adminGetOrders);
 
-/** GET /api/v1/admin/orders/:id — Chi tiết đơn hàng */
+/**
+ * @swagger
+ * /admin/orders/{id}:
+ *   get:
+ *     summary: (Admin) Get order by ID
+ *     tags: [ServicePlan]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Order details
+ */
 router.get("/admin/orders/:id", authenticate, authorize("ADMIN"), adminGetOrderById);
 
-/** PATCH /api/v1/admin/orders/:id/confirm-payment — Xác nhận thanh toán thủ công */
+/**
+ * @swagger
+ * /admin/orders/{id}/confirm-payment:
+ *   patch:
+ *     summary: (Admin) Confirm manual payment
+ *     tags: [ServicePlan]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Payment confirmed
+ */
 router.patch("/admin/orders/:id/confirm-payment", authenticate, authorize("ADMIN"), adminConfirmPaymentHandler);
 
-/** PATCH /api/v1/admin/orders/:id/status — Cập nhật trạng thái đơn hàng */
+/**
+ * @swagger
+ * /admin/orders/{id}/status:
+ *   patch:
+ *     summary: (Admin) Update order status
+ *     tags: [ServicePlan]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               status:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Status updated
+ */
 router.patch("/admin/orders/:id/status", authenticate, authorize("ADMIN"), adminUpdateOrderStatusHandler);
 
-/** PATCH /api/v1/admin/orders/:id/shipping-status — Cập nhật trạng thái vận chuyển */
+/**
+ * @swagger
+ * /admin/orders/{id}/shipping-status:
+ *   patch:
+ *     summary: (Admin) Update shipping status
+ *     tags: [ServicePlan]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               shippingStatus:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Shipping status updated
+ */
 router.patch("/admin/orders/:id/shipping-status", authenticate, authorize("ADMIN"), adminUpdateShippingStatusHandler);
 
-/** GET /api/v1/admin/real-plants/available — Cây thật chưa được gán */
+/**
+ * @swagger
+ * /admin/real-plants/available:
+ *   get:
+ *     summary: (Admin) Get available real plants
+ *     tags: [ServicePlan]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of available real plants
+ */
 router.get("/admin/real-plants/available", authenticate, authorize("ADMIN"), adminGetAvailableRealPlants);
 
-/** PATCH /api/v1/admin/orders/:id/assign-real-plant — Gán cây thật thủ công */
+/**
+ * @swagger
+ * /admin/orders/{id}/assign-real-plant:
+ *   patch:
+ *     summary: (Admin) Assign real plant to order
+ *     tags: [ServicePlan]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               realPlantId:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Plant assigned successfully
+ */
 router.patch("/admin/orders/:id/assign-real-plant", authenticate, authorize("ADMIN"), adminAssignRealPlantHandler);
 
 export default router;

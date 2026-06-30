@@ -9,13 +9,51 @@ import {
 
 const router = Router();
 
-// GET  /achievements           — danh sách definitions (không cần auth)
+/**
+ * @swagger
+ * tags:
+ *   name: Achievement
+ *   description: Achievement management endpoints
+ */
+
+/**
+ * @swagger
+ * /achievements:
+ *   get:
+ *     summary: Get list of achievement definitions
+ *     tags: [Achievement]
+ *     responses:
+ *       200:
+ *         description: List of achievements
+ */
 router.get("/", listDefinitions);
 
-// GET  /achievements/me        — tiến trình của user đang đăng nhập
+/**
+ * @swagger
+ * /achievements/me:
+ *   get:
+ *     summary: Get my achievement progress
+ *     tags: [Achievement]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User's achievement progress
+ */
 router.get("/me", authenticate, getMyAchievements);
 
-// POST /achievements/progress  — trigger refresh từ server
+/**
+ * @swagger
+ * /achievements/progress:
+ *   post:
+ *     summary: Trigger progress refresh
+ *     tags: [Achievement]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Progress refreshed
+ */
 router.post("/progress", authenticate, triggerProgressRefresh);
 
 export default router;

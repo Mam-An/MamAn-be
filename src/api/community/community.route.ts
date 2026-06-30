@@ -22,32 +22,182 @@ const router = Router();
 
 // ── Public feed (auth required để trả myReactions) ───────────────────────────
 
-/** GET /api/community/posts — Danh sách bài VISIBLE */
+/**
+ * @swagger
+ * /community/posts:
+ *   get:
+ *     summary: Danh sách bài VISIBLE
+ *     tags: [Community]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Trả về danh sách bài post trong community
+ */
 router.get("/posts", authenticate, getPosts);
 
-/** GET /api/community/posts/:id — Chi tiết bài */
+/**
+ * @swagger
+ * /community/posts/{id}:
+ *   get:
+ *     summary: Chi tiết bài post
+ *     tags: [Community]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Thông tin chi tiết bài post
+ */
 router.get("/posts/:id", authenticate, getPostById);
 
 // ── User actions ──────────────────────────────────────────────────────────────
 
-/** POST /api/community/posts/:id/reactions — Toggle reaction */
+/**
+ * @swagger
+ * /community/posts/{id}/reactions:
+ *   post:
+ *     summary: Toggle reaction cho bài viết
+ *     tags: [Community]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               reactionType:
+ *                 type: string
+ *                 example: "LIKE"
+ *     responses:
+ *       200:
+ *         description: Đã thay đổi trạng thái reaction
+ */
 router.post("/posts/:id/reactions", authenticate, toggleReaction);
 
-/** POST /api/community/posts/:id/report — Báo cáo bài viết */
+/**
+ * @swagger
+ * /community/posts/{id}/report:
+ *   post:
+ *     summary: Báo cáo bài viết
+ *     tags: [Community]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               reason:
+ *                 type: string
+ *                 example: "Spam content"
+ *     responses:
+ *       200:
+ *         description: Báo cáo thành công
+ */
 router.post("/posts/:id/report", authenticate, reportPost);
 
-/** DELETE /api/community/posts/:id — User xóa bài của mình (hoặc admin xóa mọi bài) */
+/**
+ * @swagger
+ * /community/posts/{id}:
+ *   delete:
+ *     summary: Xóa bài viết (User tự xóa hoặc Admin xóa)
+ *     tags: [Community]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Đã xóa bài viết
+ */
 router.delete("/posts/:id", authenticate, deletePost);
 
 // ── Admin actions ─────────────────────────────────────────────────────────────
 
-/** GET  /api/community/admin/posts — Tất cả bài (có lọc status) */
+/**
+ * @swagger
+ * /community/admin/posts:
+ *   get:
+ *     summary: (Admin) Lấy tất cả bài (có lọc status)
+ *     tags: [Community]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *         description: Lọc theo status (VISIBLE, HIDDEN, v.v.)
+ *     responses:
+ *       200:
+ *         description: Trả về danh sách post
+ */
 router.get("/admin/posts", authenticate, authorize("ADMIN"), getAllAdmin);
 
-/** PATCH /api/community/admin/posts/:id/hide — Ẩn bài */
+/**
+ * @swagger
+ * /community/admin/posts/{id}/hide:
+ *   patch:
+ *     summary: (Admin) Ẩn bài viết
+ *     tags: [Community]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Đã ẩn bài viết
+ */
 router.patch("/admin/posts/:id/hide", authenticate, authorize("ADMIN"), hidePost);
 
-/** PATCH /api/community/admin/posts/:id/visible — Khôi phục bài */
+/**
+ * @swagger
+ * /community/admin/posts/{id}/visible:
+ *   patch:
+ *     summary: (Admin) Khôi phục bài viết
+ *     tags: [Community]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Đã khôi phục trạng thái VISIBLE
+ */
 router.patch("/admin/posts/:id/visible", authenticate, authorize("ADMIN"), setPostVisible);
 
 export default router;

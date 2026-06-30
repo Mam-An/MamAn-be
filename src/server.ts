@@ -25,6 +25,7 @@ const ALLOWED_ORIGINS = [
   "https://garden-fe-two.vercel.app",
   "https://garden-fe.onrender.com",
   "https://garden-admin.vercel.app",
+  "https://garden-be.vercel.app",
 ];
 
 const corsOptions = {

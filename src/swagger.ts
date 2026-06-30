@@ -12,6 +12,10 @@ const options = {
     },
     servers: [
       {
+        url: "https://garden-be.vercel.app/api/v1",
+        description: "Production Server",
+      },
+      {
         url: "http://localhost:3000/api/v1",
         description: "Local Server",
       },

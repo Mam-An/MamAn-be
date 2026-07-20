@@ -18,15 +18,11 @@ import servicePlanRoutes from "./service-plan/servicePlan.route.js";
 import pointsRoutes from "./points/points.route.js";
 import achievementRoutes from "./achievement/achievement.route.js";
 import supabase from "../utils/supabase.js";
-
 const router = Router();
-
 router.use(paginateMiddleware);
-
 router.get("/", (_req: Request, res: Response) => {
-  res.json({ message: "Garden-BE API v1" });
+    res.json({ message: "Garden-BE API v1" });
 });
-
 router.use("/auth", authRoutes);
 router.use("/users", userRoutes);
 router.use("/flower-types", flowerTypeRoutes);
@@ -43,27 +39,22 @@ router.use("/community", communityRoutes);
 router.use("/calm-music", calmMusicRoutes);
 router.use("/points", pointsRoutes);
 router.use("/achievements", achievementRoutes);
-// Service Plan routes — mounted at root level (handles /plans, /orders, /me, /admin/*)
 router.use("/", servicePlanRoutes);
-
-// ---- Supabase connection test (remove in production) ----
 router.get("/test-supabase", async (_req: Request, res: Response) => {
-  try {
-    // Ping Supabase by listing tables via REST metadata endpoint
-    const { data, error } = await supabase.from("_prisma_migrations").select("id").limit(1);
-    if (error) {
-      // Table might not exist in Supabase, but a successful auth error means connection works
-      res.json({
-        connected: true,
-        note: "Supabase reachable. Query error (expected if table not in Supabase): " + error.message,
-      });
-      return;
+    try {
+        const { data, error } = await supabase.from("_prisma_migrations").select("id").limit(1);
+        if (error) {
+            res.json({
+                connected: true,
+                note: "Supabase reachable. Query error (expected if table not in Supabase): " + error.message,
+            });
+            return;
+        }
+        res.json({ connected: true, sample: data });
     }
-    res.json({ connected: true, sample: data });
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    res.status(500).json({ connected: false, error: message });
-  }
+    catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        res.status(500).json({ connected: false, error: message });
+    }
 });
-
 export default router;

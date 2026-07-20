@@ -1,82 +1,51 @@
-// ═══════════════════════════════════════════════════════════════════════
-// AI Journal Service — sinh lời động viên nhẹ nhàng cho nhật ký cảm xúc
-// ═══════════════════════════════════════════════════════════════════════
-//
-// Giai đoạn MVP: gọi GitHub AI (gpt-4o-mini) hoặc fallback tĩnh.
-// Config qua .env: AI_BASE_URL, AI_API_KEY, AI_MODEL
-// ═══════════════════════════════════════════════════════════════════════
-
 import { MoodType } from "../../generated/prisma/index.js";
-
-// ── Fallback replies khi AI không khả dụng ──────────────────────────
 const FALLBACK_REPLIES: Record<MoodType, string> = {
-  HAPPY:
-    "Cây nhận được một chút ánh sáng từ niềm vui của bạn. Mong bạn giữ lại khoảnh khắc nhỏ này cho hôm nay.",
-  CALM:
-    "Sự bình yên hôm nay cũng là một món quà nhỏ. Cây sẽ cùng bạn giữ lại cảm giác nhẹ nhàng đó.",
-  NORMAL:
-    "Một ngày bình thường cũng đáng được ghi nhận. Không cần phải đặc biệt, chỉ cần bạn vẫn đang ở đây.",
-  SAD:
-    "Buồn cũng không sao. Cây vẫn ở đây cùng bạn, và hôm nay chỉ cần một việc nhỏ thôi cũng đủ.",
-  ANXIOUS:
-    "Hãy thử thở chậm lại một chút. Bạn không cần phải giải quyết mọi thứ ngay lúc này.",
-  TIRED:
-    "Hôm nay nghỉ một chút cũng được. Cây vẫn đang chờ bạn, không vội đâu.",
+    HAPPY: "Cây nhận được một chút ánh sáng từ niềm vui của bạn. Mong bạn giữ lại khoảnh khắc nhỏ này cho hôm nay.",
+    CALM: "Sự bình yên hôm nay cũng là một món quà nhỏ. Cây sẽ cùng bạn giữ lại cảm giác nhẹ nhàng đó.",
+    NORMAL: "Một ngày bình thường cũng đáng được ghi nhận. Không cần phải đặc biệt, chỉ cần bạn vẫn đang ở đây.",
+    SAD: "Buồn cũng không sao. Cây vẫn ở đây cùng bạn, và hôm nay chỉ cần một việc nhỏ thôi cũng đủ.",
+    ANXIOUS: "Hãy thử thở chậm lại một chút. Bạn không cần phải giải quyết mọi thứ ngay lúc này.",
+    TIRED: "Hôm nay nghỉ một chút cũng được. Cây vẫn đang chờ bạn, không vội đâu.",
 };
-
-// ── Từ khoá nguy cơ tự hại (kiểm tra an toàn) ──────────────────────
 const CRISIS_KEYWORDS = [
-  "muốn chết",
-  "tự tử",
-  "không muốn sống",
-  "biến mất",
-  "tự làm đau",
-  "tự hại",
-  "kết thúc cuộc sống",
-  "chết đi cho rồi",
-  "không ai cần mình",
+    "muốn chết",
+    "tự tử",
+    "không muốn sống",
+    "biến mất",
+    "tự làm đau",
+    "tự hại",
+    "kết thúc cuộc sống",
+    "chết đi cho rồi",
+    "không ai cần mình",
 ];
-
-const CRISIS_RESPONSE =
-  "Mình rất tiếc vì bạn đang phải trải qua cảm giác nặng nề như vậy. " +
-  "Bạn không cần phải ở một mình lúc này — nếu có thể, hãy liên hệ ngay " +
-  "với người thân, người bạn tin tưởng hoặc dịch vụ hỗ trợ khẩn cấp tại nơi bạn sống.";
-
+const CRISIS_RESPONSE = "Mình rất tiếc vì bạn đang phải trải qua cảm giác nặng nề như vậy. " +
+    "Bạn không cần phải ở một mình lúc này — nếu có thể, hãy liên hệ ngay " +
+    "với người thân, người bạn tin tưởng hoặc dịch vụ hỗ trợ khẩn cấp tại nơi bạn sống.";
 export interface AiJournalInput {
-  mood: MoodType;
-  note?: string;
-  recentMoods?: MoodType[];
-  plantName?: string;
+    mood: MoodType;
+    note?: string;
+    recentMoods?: MoodType[];
+    plantName?: string;
 }
-
 export interface AiJournalResult {
-  reply: string;
-  source: "ai" | "fallback" | "crisis";
-  metadata?: Record<string, unknown>;
+    reply: string;
+    source: "ai" | "fallback" | "crisis";
+    metadata?: Record<string, unknown>;
 }
-
 function containsCrisisContent(text?: string): boolean {
-  if (!text) return false;
-  const lower = text.toLowerCase();
-  return CRISIS_KEYWORDS.some((kw) => lower.includes(kw));
+    if (!text)
+        return false;
+    const lower = text.toLowerCase();
+    return CRISIS_KEYWORDS.some((kw) => lower.includes(kw));
 }
-
-// ── Hàm chính ───────────────────────────────────────────────────────
-export async function generateJournalReply(
-  input: AiJournalInput
-): Promise<AiJournalResult> {
-  const { mood, note } = input;
-
-  // 1. Kiểm tra nội dung nguy cơ tự hại
-  if (containsCrisisContent(note)) {
-    // Log cảnh báo nội bộ — KHÔNG log nội dung note
-    console.warn("[AI-Journal] Crisis content detected — returning safe response");
-    return { reply: CRISIS_RESPONSE, source: "crisis" };
-  }
-
-  // 2. Dùng các câu trả lời tĩnh có sẵn
-  return {
-    reply: FALLBACK_REPLIES[mood],
-    source: "fallback",
-  };
+export async function generateJournalReply(input: AiJournalInput): Promise<AiJournalResult> {
+    const { mood, note } = input;
+    if (containsCrisisContent(note)) {
+        console.warn("[AI-Journal] Crisis content detected — returning safe response");
+        return { reply: CRISIS_RESPONSE, source: "crisis" };
+    }
+    return {
+        reply: FALLBACK_REPLIES[mood],
+        source: "fallback",
+    };
 }

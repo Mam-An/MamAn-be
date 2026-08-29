@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { authenticate, authorize } from "../../middlewares/auth.middleware.js";
+import { uploadGeneral } from "../../middlewares/upload.middleware.js";
 import {
   createRequest,
   listRequests,
@@ -41,7 +42,7 @@ router.patch("/my/share-plant", authorize("USER"), sharePlant);
 
 // Tin nhắn
 router.get("/messages", authorize("USER"), getMessages);
-router.post("/messages", authorize("USER"), sendMessage);
+router.post("/messages", authorize("USER"), uploadGeneral.single("photo"), sendMessage);
 router.patch("/messages/read", authorize("USER"), markMessagesRead);
 
 // ── Admin routes ─────────────────────────────────────────────────

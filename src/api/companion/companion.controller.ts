@@ -459,12 +459,13 @@ export async function getMessages(req: Request, res: Response) {
 export async function sendMessage(req: Request, res: Response) {
   try {
     const userId = req.user!.id;
-    const { content } = req.body as { content: string };
+    const { content } = req.body as { content?: string };
+    const imageUrl = req.file?.path;
 
-    if (!content || content.trim().length === 0) {
-      return res.status(400).json({ message: "Nội dung tin nhắn không được trống" });
+    if ((!content || content.trim().length === 0) && !imageUrl) {
+      return res.status(400).json({ message: "Phải có ảnh hoặc nội dung tin nhắn" });
     }
-    if (content.length > 1000) {
+    if (content && content.length > 1000) {
       return res.status(400).json({ message: "Tin nhắn tối đa 1000 ký tự" });
     }
 
@@ -483,7 +484,8 @@ export async function sendMessage(req: Request, res: Response) {
       data: {
         companionshipId: companionship.id,
         senderId: userId,
-        content: content.trim(),
+        content: content ? content.trim() : '',
+        imageUrl: imageUrl || null,
       },
       include: {
         sender: { select: { id: true, fullName: true, avatarUrl: true } },

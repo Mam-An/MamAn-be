@@ -200,6 +200,12 @@ model User {
   plantReactions PlantReaction[]
   plantComments  PlantComment[]
 
+  // Companion relations
+  companionRequests     CompanionRequest[]
+  companionshipsAsUser1 Companionship[]    @relation("CompanionUser1")
+  companionshipsAsUser2 Companionship[]    @relation("CompanionUser2")
+  companionMessages     CompanionMessage[] @relation("CompanionMessageSender")
+
   @@map("User")
 }
 
@@ -280,8 +286,9 @@ model RealPlant {
   updates      PlantUpdate[]
   orders       Order[]
 
-  reactions PlantReaction[]
-  comments  PlantComment[]
+  reactions     PlantReaction[]
+  comments      PlantComment[]
+  companionships Companionship[]
 
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
@@ -839,4 +846,90 @@ model FlowerHarvest {
   @@index([userId, flowerTypeId])
   @@index([harvestedAt])
   @@map("FlowerHarvest")
+}
+
+// ─────────────────────────────────────────
+// COMPANION MATCHING FEATURE
+// ─────────────────────────────────────────
+
+enum CompanionMode {
+  SPONSOR_GROWER // muốn nhờ/tài trợ người trồng (không có thời gian)
+  GROWER_GROWER  // đang trồng thật, muốn tìm bạn cùng hành trình
+  OPEN           // mở - bất kỳ ai, chỉ muốn kết nối qua cây
+}
+
+enum CompanionRequestStatus {
+  PENDING
+  MATCHED
+  CANCELLED
+}
+
+enum CompanionshipStatus {
+  ACTIVE
+  ENDED
+}
+
+model CompanionRequest {
+  id     String @id @default(uuid()) @db.Uuid
+  userId String @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  mode     CompanionMode
+  moodNote String?                @db.Text
+  status   CompanionRequestStatus @default(PENDING)
+
+  companionshipId String? @db.Uuid
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  @@index([userId])
+  @@index([status, mode])
+  @@map("CompanionRequest")
+}
+
+model Companionship {
+  id String @id @default(uuid()) @db.Uuid
+
+  user1Id String @db.Uuid
+  user1   User   @relation("CompanionUser1", fields: [user1Id], references: [id], onDelete: Restrict)
+
+  user2Id String @db.Uuid
+  user2   User   @relation("CompanionUser2", fields: [user2Id], references: [id], onDelete: Restrict)
+
+  mode   CompanionMode
+  status CompanionshipStatus @default(ACTIVE)
+
+  // Cây thật đang cùng theo dõi (optional — do người trồng quyết định chia sẻ)
+  realPlantId String?    @db.Uuid
+  realPlant   RealPlant? @relation(fields: [realPlantId], references: [id], onDelete: SetNull)
+
+  startedAt DateTime  @default(now()) @db.Timestamptz(3)
+  endedAt   DateTime? @db.Timestamptz(3)
+  endReason String?   @db.VarChar(255)
+
+  messages CompanionMessage[]
+
+  @@index([user1Id])
+  @@index([user2Id])
+  @@index([status])
+  @@map("Companionship")
+}
+
+model CompanionMessage {
+  id              String        @id @default(uuid()) @db.Uuid
+  companionshipId String        @db.Uuid
+  companionship   Companionship @relation(fields: [companionshipId], references: [id], onDelete: Cascade)
+
+  senderId String @db.Uuid
+  sender   User   @relation("CompanionMessageSender", fields: [senderId], references: [id], onDelete: Restrict)
+
+  content String  @db.Text
+  isRead  Boolean @default(false)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([companionshipId, createdAt])
+  @@index([senderId])
+  @@map("CompanionMessage")
 }

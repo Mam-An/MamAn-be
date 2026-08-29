@@ -17,6 +17,7 @@ import zenFlowerRoutes from "./zen-flower/zenFlower.route.js";
 import servicePlanRoutes from "./service-plan/servicePlan.route.js";
 import pointsRoutes from "./points/points.route.js";
 import achievementRoutes from "./achievement/achievement.route.js";
+import companionRoutes from "./companion/companion.route.js";
 import supabase from "../utils/supabase.js";
 const router = Router();
 router.use(paginateMiddleware);
@@ -39,6 +40,7 @@ router.use("/community", communityRoutes);
 router.use("/calm-music", calmMusicRoutes);
 router.use("/points", pointsRoutes);
 router.use("/achievements", achievementRoutes);
+router.use("/companion", companionRoutes);
 router.use("/", servicePlanRoutes);
 router.get("/test-supabase", async (_req: Request, res: Response) => {
     try {

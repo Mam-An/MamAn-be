@@ -1,18 +1,29 @@
 import "dotenv/config";
+import { createServer } from "http";
 import app from "./server.js";
 import prisma from "./utils/prisma.js";
 import { initNotificationScheduler } from "./api/notification/scheduler.service.js";
+import { initSocket } from "./utils/socket.js";
+
 const PORT = process.env.PORT || 3000;
+
 async function startServer() {
     try {
         await prisma.$connect();
-        await prisma.$queryRaw `SELECT 1`;
+        await prisma.$queryRaw`SELECT 1`;
         console.log("Database connected successfully");
-        app.listen(PORT, () => {
+
+        // Create http server and attach Socket.IO
+        const httpServer = createServer(app);
+        initSocket(httpServer);
+
+        httpServer.listen(PORT, () => {
             console.log(`Server is running on port ${PORT}`);
             console.log(`Swagger Docs available at http://localhost:${PORT}/api-docs`);
         });
+
         initNotificationScheduler();
+
         const shutdown = async () => {
             try {
                 await prisma.$disconnect();
@@ -31,4 +42,6 @@ async function startServer() {
         process.exit(1);
     }
 }
+
 startServer();
+

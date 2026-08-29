@@ -1,12 +1,13 @@
 import type { Request, Response, NextFunction } from "express";
 import prisma from "../../utils/prisma.js";
+import type { Prisma, UserRole } from "../../generated/prisma/index.js";
 const VALID_ROLES = ["USER", "FARMER", "ADMIN"];
 export const getAllUsers = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { role } = req.query;
-        const filter: any = {};
-        if (role && VALID_ROLES.includes(role as string)) {
-            filter.role = role;
+        const filter: Prisma.UserWhereInput = {};
+        if (role && typeof role === "string" && VALID_ROLES.includes(role)) {
+            filter.role = role as UserRole;
         }
         const users = await prisma.user.findMany({
             where: filter,

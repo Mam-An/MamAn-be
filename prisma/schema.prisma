@@ -289,6 +289,7 @@ model RealPlant {
   reactions     PlantReaction[]
   comments      PlantComment[]
   companionships Companionship[]
+  companionRequests CompanionRequest[] @relation("RequestRealPlant")
 
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
@@ -879,6 +880,9 @@ model CompanionRequest {
   status   CompanionRequestStatus @default(PENDING)
 
   companionshipId String? @db.Uuid
+  
+  realPlantId String? @db.Uuid
+  realPlant   RealPlant? @relation("RequestRealPlant", fields: [realPlantId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)

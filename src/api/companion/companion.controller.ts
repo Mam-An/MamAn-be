@@ -15,7 +15,7 @@ import type { CompanionMode } from "../../generated/prisma/index.js";
 export async function createRequest(req: Request, res: Response) {
   try {
     const userId = req.user!.id;
-    const { mode, moodNote } = req.body as { mode: CompanionMode; moodNote?: string };
+    const { mode, moodNote, realPlantId } = req.body as { mode: CompanionMode; moodNote?: string; realPlantId?: string };
 
     if (!mode || !["SPONSOR_GROWER", "GROWER_GROWER", "OPEN"].includes(mode)) {
       return res.status(400).json({ message: "mode không hợp lệ (SPONSOR_GROWER | GROWER_GROWER | OPEN)" });
@@ -40,8 +40,17 @@ export async function createRequest(req: Request, res: Response) {
       return res.status(409).json({ message: "Bạn đã có một yêu cầu đang chờ ghép nối" });
     }
 
+    if (realPlantId) {
+      const isOwner = await prisma.virtualPlant.findFirst({
+        where: { userId, realPlantId },
+      });
+      if (!isOwner) {
+        return res.status(403).json({ message: "Cây thật không tồn tại hoặc không thuộc sở hữu của bạn" });
+      }
+    }
+
     const request = await prisma.companionRequest.create({
-      data: { userId, mode, moodNote: moodNote || null },
+      data: { userId, mode, moodNote: moodNote || null, realPlantId: realPlantId || null },
       include: {
         user: { select: { id: true, fullName: true, avatarUrl: true } },
       },
@@ -78,6 +87,12 @@ export async function listRequests(req: Request, res: Response) {
         where,
         include: {
           user: { select: { id: true, fullName: true, avatarUrl: true } },
+          realPlant: {
+            include: {
+              flowerType: { select: { id: true, name: true, imageUrl: true } },
+              garden: { select: { id: true, name: true } },
+            },
+          },
         },
         orderBy: { createdAt: "desc" },
         skip: (page - 1) * limit,
@@ -275,6 +290,14 @@ export async function getMyRequest(req: Request, res: Response) {
 
     const request = await prisma.companionRequest.findFirst({
       where: { userId, status: "PENDING" },
+      include: {
+        realPlant: {
+          include: {
+            flowerType: { select: { id: true, name: true, imageUrl: true } },
+            garden: { select: { id: true, name: true } },
+          },
+        },
+      },
     });
 
     return res.json({ data: request });

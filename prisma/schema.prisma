@@ -879,10 +879,12 @@ model CompanionRequest {
   moodNote String?                @db.Text
   status   CompanionRequestStatus @default(PENDING)
 
-  companionshipId String? @db.Uuid
-  
-  realPlantId String? @db.Uuid
-  realPlant   RealPlant? @relation("RequestRealPlant", fields: [realPlantId], references: [id], onDelete: SetNull)
+  companionshipId String?    @db.Uuid
+  realPlantId     String?    @db.Uuid
+  realPlant       RealPlant? @relation("RequestRealPlant", fields: [realPlantId], references: [id], onDelete: SetNull)
+
+  homePlantName     String? @db.VarChar(100)
+  homePlantImageUrl String? @db.Text
 
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)

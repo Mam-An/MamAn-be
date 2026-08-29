@@ -15,7 +15,9 @@ import type { CompanionMode } from "../../generated/prisma/index.js";
 export async function createRequest(req: Request, res: Response) {
   try {
     const userId = req.user!.id;
-    const { mode, moodNote, realPlantId } = req.body as { mode: CompanionMode; moodNote?: string; realPlantId?: string };
+    const { mode, moodNote, realPlantId, homePlantName, homePlantImageUrl } = req.body as { 
+      mode: CompanionMode; moodNote?: string; realPlantId?: string; homePlantName?: string; homePlantImageUrl?: string 
+    };
 
     if (!mode || !["SPONSOR_GROWER", "GROWER_GROWER", "OPEN"].includes(mode)) {
       return res.status(400).json({ message: "mode không hợp lệ (SPONSOR_GROWER | GROWER_GROWER | OPEN)" });
@@ -50,7 +52,13 @@ export async function createRequest(req: Request, res: Response) {
     }
 
     const request = await prisma.companionRequest.create({
-      data: { userId, mode, moodNote: moodNote || null, realPlantId: realPlantId || null },
+      data: { 
+        userId, mode, 
+        moodNote: moodNote || null, 
+        realPlantId: realPlantId || null,
+        homePlantName: homePlantName || null,
+        homePlantImageUrl: homePlantImageUrl || null,
+      },
       include: {
         user: { select: { id: true, fullName: true, avatarUrl: true } },
       },

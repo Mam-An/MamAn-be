@@ -3,7 +3,6 @@ import { createServer } from "http";
 import app from "./server.js";
 import prisma from "./utils/prisma.js";
 import { initNotificationScheduler } from "./api/notification/scheduler.service.js";
-import { initSocket } from "./utils/socket.js";
 
 const PORT = process.env.PORT || 3000;
 
@@ -13,9 +12,8 @@ async function startServer() {
         await prisma.$queryRaw`SELECT 1`;
         console.log("Database connected successfully");
 
-        // Create http server and attach Socket.IO
+        // Create http server
         const httpServer = createServer(app);
-        initSocket(httpServer);
 
         httpServer.listen(PORT, () => {
             console.log(`Server is running on port ${PORT}`);

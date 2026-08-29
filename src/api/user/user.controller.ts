@@ -60,7 +60,7 @@ export const savePushToken = async (req: Request, res: Response, next: NextFunct
 };
 export const getUserVirtualPlants = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const userId = req.params.id;
+        const userId = req.params.id as string;
         const plants = await prisma.virtualPlant.findMany({
             where: { userId },
             include: { flowerType: true, realPlant: true },
@@ -74,7 +74,7 @@ export const getUserVirtualPlants = async (req: Request, res: Response, next: Ne
 };
 export const getUserRealPlants = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const userId = req.params.id;
+        const userId = req.params.id as string;
         const user = await prisma.user.findUnique({ where: { id: userId } });
         if (!user) {
             return res.status(200).json({ metadata: { data: [] } });
@@ -84,7 +84,7 @@ export const getUserRealPlants = async (req: Request, res: Response, next: NextF
                 where: { userId },
                 select: { realPlantId: true }
             });
-            const rpIds = vps.map(v => v.realPlantId).filter(Boolean);
+            const rpIds = vps.map(v => v.realPlantId).filter((id): id is string => Boolean(id));
             if (rpIds.length === 0) {
                 return res.status(200).json({ metadata: { data: [] } });
             }
@@ -119,7 +119,7 @@ export const getUserRealPlants = async (req: Request, res: Response, next: NextF
 };
 export const getUserMoodJournals = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const userId = req.params.id;
+        const userId = req.params.id as string;
         const journals = await prisma.moodJournal.findMany({
             where: { userId },
             orderBy: { createdAt: "desc" },

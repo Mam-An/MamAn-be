@@ -50,18 +50,18 @@ export function initNotificationScheduler() {
                 const settings = user.notificationSetting;
                 if (settings?.enablePlantReminder !== false && user.virtualPlants.length > 0) {
                     if (user.lastActiveAt < twentyFourHoursAgo) {
-                        await sendNotification(user.id, "Chăm sóc Mầm An", getRandomMessage(PLANT_MESSAGES), ReminderType.PLANT_REMINDER);
+                        await sendNotification(user.id, "Chăm sóc Mầm An", getRandomMessage(PLANT_MESSAGES) || "", ReminderType.PLANT_REMINDER);
                     }
                 }
                 if (settings?.enableJournalReminder !== false) {
                     if (user.moodJournals.length === 0) {
-                        await sendNotification(user.id, "Nhật ký cảm xúc", getRandomMessage(JOURNAL_MESSAGES), ReminderType.JOURNAL_REMINDER);
+                        await sendNotification(user.id, "Nhật ký cảm xúc", getRandomMessage(JOURNAL_MESSAGES) || "", ReminderType.JOURNAL_REMINDER);
                     }
                 }
                 if (settings?.enableGardenYenReminder !== false && user.unlockedTracks.length > 0) {
                     const lastTrack = user.unlockedTracks[0];
                     if (lastTrack && lastTrack.unlockedAt < threeDaysAgo && user.lastActiveAt < threeDaysAgo) {
-                        await sendNotification(user.id, "Vườn Yên", getRandomMessage(GARDEN_YEN_MESSAGES), ReminderType.GARDEN_YEN_REMINDER);
+                        await sendNotification(user.id, "Vườn Yên", getRandomMessage(GARDEN_YEN_MESSAGES) || "", ReminderType.GARDEN_YEN_REMINDER);
                     }
                 }
             }

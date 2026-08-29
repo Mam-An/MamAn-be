@@ -163,7 +163,7 @@ export const getComments = async (req: Request, res: Response, next: NextFunctio
 export const deleteComment = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const userId = req.user!.id;
-        const { commentId } = req.params;
+        const commentId = req.params.commentId as string;
         const comment = await prisma.plantComment.findUnique({
             where: { id: commentId },
         });

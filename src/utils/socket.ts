@@ -112,11 +112,8 @@ export function initSocket(httpServer: HttpServer): Server {
   return io;
 }
 
-export function getIO(): Server {
-  if (!io) {
-    throw new Error("Socket.IO not initialized. Call initSocket() first.");
-  }
-  return io;
+export function getIO(): Server | null {
+  return io ?? null;
 }
 
 /**
@@ -126,7 +123,9 @@ export function emitCompanionMessage(
   companionshipId: string,
   message: CompanionMessagePayload
 ): void {
-  const ns = getIO().of("/companion");
+  const server = getIO();
+  if (!server) return;
+  const ns = server.of("/companion");
   ns.to(`companionship:${companionshipId}`).emit("companion:message", message);
 }
 
@@ -137,7 +136,9 @@ export function emitCompanionMatched(
   userId: string,
   data: { companionshipId: string; partnerId: string; partnerName: string | null; partnerAvatar: string | null }
 ): void {
-  const ns = getIO().of("/companion");
+  const server = getIO();
+  if (!server) return;
+  const ns = server.of("/companion");
   ns.to(`user:${userId}`).emit("companion:matched", data);
 }
 
@@ -145,7 +146,9 @@ export function emitCompanionMatched(
  * Notify users their companionship has ended
  */
 export function emitCompanionEnded(userId: string, companionshipId: string, reason?: string): void {
-  const ns = getIO().of("/companion");
+  const server = getIO();
+  if (!server) return;
+  const ns = server.of("/companion");
   ns.to(`user:${userId}`).emit("companion:ended", { companionshipId, reason });
 }
 
@@ -153,6 +156,8 @@ export function emitCompanionEnded(userId: string, companionshipId: string, reas
  * Notify the other user that messages have been read
  */
 export function emitMessagesRead(companionshipId: string, readByUserId: string): void {
-  const ns = getIO().of("/companion");
+  const server = getIO();
+  if (!server) return;
+  const ns = server.of("/companion");
   ns.to(`companionship:${companionshipId}`).emit("companion:read", { readByUserId });
 }

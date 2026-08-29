@@ -1,12 +1,18 @@
 import type { Request, Response } from "express";
 import prisma from "../../utils/prisma.js";
-import {
-  emitCompanionMessage,
-  emitCompanionMatched,
-  emitCompanionEnded,
-  emitMessagesRead,
-} from "../../utils/socket.js";
 import type { CompanionMode } from "../../generated/prisma/index.js";
+
+// Lazy import socket functions to avoid crashing on Vercel serverless
+// (socket.io Server cannot be bundled for serverless)
+async function safeEmit(fn: string, ...args: unknown[]) {
+  try {
+    const mod = await import("../../utils/socket.js");
+    const emitter = (mod as Record<string, (...a: unknown[]) => void>)[fn];
+    if (typeof emitter === "function") emitter(...args);
+  } catch {
+    // Socket.IO not available (e.g. Vercel serverless) — silently skip
+  }
+}
 
 // ────────────────────────────────────────────────────────────────
 // POST /companion/request
@@ -216,7 +222,7 @@ export async function matchRequest(req: Request, res: Response) {
     });
 
     // Emit real-time notifications
-    emitCompanionMatched(targetRequest.userId, {
+    safeEmit("emitCompanionMatched", targetRequest.userId, {
       companionshipId: companionship.id,
       partnerId: currentUserId,
       partnerName: companionship.user2.fullName,
@@ -346,8 +352,8 @@ export async function endCompanionship(req: Request, res: Response) {
 
     // Notify both users
     const partnerId = companionship.user1Id === userId ? companionship.user2Id : companionship.user1Id;
-    emitCompanionEnded(userId, companionship.id, reason);
-    emitCompanionEnded(partnerId, companionship.id, reason);
+    safeEmit("emitCompanionEnded", userId, companionship.id, reason);
+    safeEmit("emitCompanionEnded", partnerId, companionship.id, reason);
 
     await prisma.notification.create({
       data: {
@@ -502,7 +508,7 @@ export async function sendMessage(req: Request, res: Response) {
     });
 
     // Emit real-time via Socket.IO
-    emitCompanionMessage(companionship.id, {
+    safeEmit("emitCompanionMessage", companionship.id, {
       id: message.id,
       companionshipId: message.companionshipId,
       senderId: message.senderId,
@@ -548,8 +554,8 @@ export async function markMessagesRead(req: Request, res: Response) {
       data: { isRead: true },
     });
 
-    // Notify the sender their messages were read
-    emitMessagesRead(companionship.id, userId);
+    // Notify the sender their messages    // Emit via socket
+    safeEmit("emitMessagesRead", companionship.id, userId);
 
     return res.json({ message: "Đã đánh dấu đã đọc" });
   } catch (err) {
@@ -684,8 +690,8 @@ export async function adminEndCompanionship(req: Request, res: Response) {
     });
 
     // Notify both users
-    emitCompanionEnded(companionship.user1Id, id, "Admin kết thúc");
-    emitCompanionEnded(companionship.user2Id, id, "Admin kết thúc");
+    safeEmit("emitCompanionEnded", companionship.user1Id, id, "Admin kết thúc");
+    safeEmit("emitCompanionEnded", companionship.user2Id, id, "Admin kết thúc");
 
     return res.json({ message: "Đã kết thúc kết nối" });
   } catch (err) {
